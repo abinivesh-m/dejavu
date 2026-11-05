@@ -228,6 +228,7 @@ function renderStage() {
         <span class="hero-eyebrow"><i></i> On-call incident memory · Hindsight</span>
         <h2 class="hero-title">The incident you're having <em>already happened.</em></h2>
         <p class="hero-sub">At 3 a.m. the answer is rarely in the model's weights. It's in your own history: the same failure six weeks ago, the fix that held, the engineer who shipped it — and the look-alike that fooled everyone. <b>Déjà Vu recalls it, proves every claim with a receipt, and gets sharper every time you resolve.</b></p>
+        <p class="hero-trust">One Hindsight bank per team — retrieval never leaves your own incidents.</p>
         <div class="hero-cta">
           <button class="btn primary lg" id="btnDemo2"><span class="play">▶</span> Run the 60-second story</button>
           <button class="btn ghost lg" id="btnFire2">Fire a single alert</button>
@@ -641,7 +642,17 @@ function renderVerdict() {
   const h = on.hypothesis || {};
   const offConf = (state.off?.hypothesis?.confidence) || 0.31;
   const saved = Math.max(0, Math.round((h.fix_minutes ? 45 - h.fix_minutes : 39)));
+  const d = on.decision || {};
+  const level = ["apply", "verify", "stop"].includes(d.level) ? d.level : "verify";
+  const decision = d.label
+    ? `<div class="decision ${level}">
+        <span class="d-label">${esc(d.label)}</span>
+        <span class="d-reason">${esc(d.reason || "")}</span>
+        <span class="d-check">${esc(d.check || "")}</span>
+      </div>`
+    : "";
   el.innerHTML = `<div class="verdict-hero fade-in">
+    ${decision}
     <div class="vh-left">
       <div class="vh-eyebrow">Same alert · two answers</div>
       <div class="vh-grid">
@@ -855,7 +866,8 @@ async function runStory() {
     const bank = state.overview?.counts?.memories ?? 34;
     await runAnalysis("on");
     const receipts = state.on?.evidence?.length || 0;
-    storyAct(3, `Memory on — ${bank} retained incidents`, `Same alert. Hindsight recalls the missing composite index, ${receipts} receipts, and the engineer who fixed it in 6 minutes.`);
+    const verdict = (state.on?.decision?.label || "").toLowerCase();
+    storyAct(3, `Memory on — ${bank} retained incidents`, `Same alert. Hindsight recalls the missing composite index, ${receipts} receipts, and the engineer who fixed it in 6 minutes.${verdict ? ` Verdict: ${verdict}.` : ""}`);
     toast(`Memory ON: same alert, now with ${bank} retained incidents.`);
     await sleep(2600);
     if (state.storyAbort) return;

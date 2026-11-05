@@ -282,6 +282,40 @@ def _avoid(ranked: list[dict], top: dict) -> list[str]:
     return out[:2]
 
 
+def _decision(confidence: float, contradiction: dict | None, top: dict, evidence: list[dict]) -> dict:
+    """One operational call the on-call engineer can act on."""
+    if not evidence:
+        return {
+            "level": "stop", "label": "DO NOT APPLY",
+            "reason": "No precedent in the bank to justify a fix.",
+            "check": "Resolve one incident first — then memory has something to cite.",
+        }
+    rate = round(top["success_rate"] * 100)
+    if confidence >= 0.75 and not top["stale"]:
+        check = f"Same fingerprint as {top['best']['incident_id']}."
+        if contradiction:
+            check = (f"Ruled out {contradiction['incident_id']} at "
+                     f"{round(contradiction['similarity'] * 100)}% — different cause.")
+        return {
+            "level": "apply", "label": "APPLY THIS FIX",
+            "reason": (f"{top['support']} prior incident{'s' if top['support'] != 1 else ''}"
+                       f" · fix held {rate}% of the time"),
+            "check": check,
+        }
+    if top["stale"]:
+        reason = "The closest precedent is stale — the system changed since."
+    elif confidence < 0.55:
+        reason = "Confidence is below the bar for applying a fix."
+    else:
+        reason = "The evidence is close but not decisive."
+    return {
+        "level": "verify", "label": "VERIFY FIRST",
+        "reason": reason,
+        "check": (contradiction["why_not"] if contradiction
+                  else "Confirm the discriminator before running the fix."),
+    }
+
+
 def _generic(alert: dict) -> dict:
     """The 'memory off' baseline: a competent but generic playbook."""
     sig = alert.get("signals", {})
@@ -315,6 +349,11 @@ def _generic(alert: dict) -> dict:
         "avoid": [],
         "evidence": [],
         "contradiction": None,
+        "decision": {
+            "level": "stop", "label": "DO NOT APPLY",
+            "reason": "Generic triage has no precedent behind it.",
+            "check": "Use it as a holding action while you look for the real cause.",
+        },
         "receipts": [],
         "signals_used": list(sig.keys()),
     }
@@ -341,12 +380,15 @@ def analyze(alert_id: str, mode: str = "on") -> dict:
     query = build_query(alert)
     t1 = time.perf_counter()
     mem = memory.recall(query, k=10, service=alert["service"])
-    seen = {h["incident_id"] for h in mem["hits"]}
+    seen = {h["incident_id"]: h for h in mem["hits"]}
     for h in memory.live_hits(alert["service"]):
-        if h["incident_id"] in seen:
-            continue
         sig, _ = _signal_similarity(alert.get("signals") or {}, h.get("signals") or {})
-        h["score"] = round(0.97 if sig >= 0.8 else 0.55, 3)
+        boosted = round(0.97 if sig >= 0.8 else 0.55, 3)
+        if h["incident_id"] in seen:
+            if sig >= 0.8:
+                seen[h["incident_id"]]["score"] = boosted
+            continue
+        h["score"] = boosted
         mem["hits"].append(h)
     mem_ms = (time.perf_counter() - t1) * 1000
     trace.append({"step": "recall", "label": f"recall({memory.BANK}) -> {len(mem['hits'])} memories", "ms": round(mem_ms, 1)})
@@ -374,6 +416,11 @@ def analyze(alert_id: str, mode: str = "on") -> dict:
         }
 
     confidence = max(0.42, min(0.97, 0.5 + 0.42 * top["similarity"] + 0.08 * top["success_rate"]))
+    top_sig = max((_signal_similarity(alert.get("signals") or {}, h.get("signals") or {})[0]
+                   for h in top["hits"]), default=0.0)
+    if top_sig >= 0.8 and not top["stale"]:
+        # a decisive fingerprint keeps confidence stable when the reranker is noisy
+        confidence = max(confidence, 0.95)
     if top["stale"]:
         confidence -= 0.05
 
@@ -423,6 +470,7 @@ def analyze(alert_id: str, mode: str = "on") -> dict:
         "why": (llm or {}).get("why") or [],
         "actions": actions, "avoid": avoid, "evidence": evidence,
         "contradiction": contradiction,
+        "decision": _decision(confidence, contradiction, top, evidence),
         "receipts": [h for h in mem["hits"]],
         "memory_latency_ms": round(mem_ms, 1),
         "latency_ms": round((time.perf_counter() - t0) * 1000, 1),

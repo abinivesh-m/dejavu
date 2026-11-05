@@ -64,6 +64,11 @@ def main() -> int:
           str(on["hypothesis"]["confidence"]))
     check("memory on has >= 2 receipts", len(on["evidence"]) >= 2, str(len(on["evidence"])))
     check("contradiction present", on["contradiction"] is not None)
+    check("decision present", (on.get("decision") or {}).get("label") in
+          ("APPLY THIS FIX", "VERIFY FIRST", "DO NOT APPLY"),
+          (on.get("decision") or {}).get("label", ""))
+    check("decision is apply for demo", (on.get("decision") or {}).get("level") == "apply",
+          (on.get("decision") or {}).get("level", ""))
     check("band dispatch attached", isinstance(on.get("band"), dict) and on["band"].get("messages"))
     check("band verdict present", (on["band"].get("review") or {}).get("verdict") in ("allow", "review", "block"))
 
@@ -87,18 +92,32 @@ def main() -> int:
     check("replay early < late", rep["early"] < rep["late"], f"{rep['early']} vs {rep['late']}")
 
     # ---- content files
-    art = ROOT / "article.md"
-    check("article.md exists", art.exists())
-    if art.exists():
-        txt = art.read_text(encoding="utf-8")
+    articles = {
+        "abinivesh-m": ROOT / "docs" / "ARTICLE.md",
+        "abhinivesh-k": ROOT / "docs" / "articles" / "abhinivesh-k.md",
+        "mrittika-s": ROOT / "docs" / "articles" / "mrittika-s.md",
+        "harini-e-s": ROOT / "docs" / "articles" / "harini-e-s.md",
+    }
+    root_art = ROOT / "article.md"
+    check("article.md exists", root_art.exists())
+    check(
+        "article.md matches docs/ARTICLE.md",
+        root_art.exists()
+        and root_art.read_text(encoding="utf-8") == articles["abinivesh-m"].read_text(encoding="utf-8"),
+    )
+    for name, path in articles.items():
+        check(f"{name} article exists", path.exists())
+        if not path.exists():
+            continue
+        txt = path.read_text(encoding="utf-8")
         words = len(re.findall(r"\w+", txt))
-        check("article 800-1500 words", 800 <= words <= 1500, str(words))
-        check("article mentions Hindsight", "Hindsight" in txt)
-        check("article has hindsight github link", "github.com/vectorize-io/hindsight" in txt)
-        check("article has hindsight docs link", "hindsight.vectorize.io" in txt)
-        check("article has vectorize memory link", "vectorize.io/what-is-agent-memory" in txt)
-        check("article has code snippet", "```" in txt)
-        check("article no 'hackathon'", "hackathon" not in txt.lower())
+        check(f"{name} 800-1500 words", 800 <= words <= 1500, str(words))
+        check(f"{name} mentions Hindsight", "Hindsight" in txt)
+        check(f"{name} hindsight github link", "github.com/vectorize-io/hindsight" in txt)
+        check(f"{name} hindsight docs link", "hindsight.vectorize.io" in txt)
+        check(f"{name} vectorize memory link", "vectorize.io/what-is-agent-memory" in txt)
+        check(f"{name} code snippet", "```" in txt)
+        check(f"{name} no 'hackathon'", "hackathon" not in txt.lower())
 
     soc = ROOT / "docs" / "SOCIAL.md"
     check("SOCIAL.md exists", soc.exists())
@@ -125,6 +144,17 @@ def main() -> int:
     check(".gitignore exists", gi.exists())
     if gi.exists():
         check(".env in .gitignore", ".env" in gi.read_text(encoding="utf-8"))
+
+    # ---- cleanup: verification writes a live incident, so leave the bank pristine
+    with db.connect() as con:
+        for tbl in ("alerts", "analyses", "bus", "band"):
+            con.execute(f"DELETE FROM {tbl}")
+        con.execute("DELETE FROM memories WHERE incident_id LIKE 'INC-LIVE%'")
+        con.execute("DELETE FROM incidents WHERE id LIKE 'INC-LIVE%'")
+    try:
+        memory.forget_live()
+    except Exception:
+        pass
 
     # ---- summary
     print(f"\n{len(OK)} passed, {len(FAIL)} failed")
