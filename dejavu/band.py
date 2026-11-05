@@ -34,7 +34,6 @@ KEY = os.getenv("BAND_API_KEY") or ""
 CHAT = os.getenv("BAND_CHAT_ID") or ""
 CRITIC_KEY = os.getenv("BAND_CRITIC_API_KEY") or ""
 HUMAN_ID = os.getenv("BAND_HUMAN_ID") or ""
-HUMAN_NAME = os.getenv("BAND_HUMAN_NAME") or HUMAN_ID
 AGENT_NAME = os.getenv("BAND_AGENT_NAME", "DejaVu-Recall")
 CRITIC_NAME = os.getenv("BAND_CRITIC_NAME", "DejaVu-Critic")
 TIMEOUT = float(os.getenv("BAND_TIMEOUT", "12"))
@@ -218,15 +217,20 @@ def dispatch(analysis: dict, alert_id: str) -> dict:
     add(AGENT_NAME, "recall", recall, "thought", KEY)
 
     # The critic answers the recall agent — this is the dependent handoff.
-    add(CRITIC_NAME, "critic", critic_text, "tool_result", CRITIC_KEY or KEY)
+    # Posted as a thought: Band Desktop filters tool results out of the event
+    # feed by default, and the review is the part a human has to read.
+    add(CRITIC_NAME, "critic", critic_text, "thought", CRITIC_KEY or KEY)
 
     if review["verdict"] == "block":
         add(AGENT_NAME, "recall",
             "Blocked. Not escalating this fix. Re-collecting signals before the next attempt.",
             "thought", KEY)
     elif HUMAN_ID:
+        # Band renders the mention from the mentions list, so the body must not
+        # repeat "@name" or the room shows it twice.
         add(AGENT_NAME, "recall",
-            f"@{HUMAN_NAME} — {review['verdict'].upper()}. Approve the fix in this room and I will retain the lesson.",
+            f"{review['verdict'].upper()} on {analysis.get('alert', {}).get('service', 'this service')}. "
+            "Approve the fix in this room and I will retain the lesson.",
             "message", KEY, mentions=[HUMAN_ID])
 
     return {

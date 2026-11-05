@@ -107,7 +107,6 @@ BAND_API_KEY=<recall key>
 BAND_CRITIC_API_KEY=<critic key>
 BAND_CHAT_ID=<room id>
 BAND_HUMAN_ID=<your participant id>   # optional, enables the @mention
-BAND_HUMAN_NAME=<your display name>   # optional, the name written after @
 ```
 
 7. Restart the app. Fire an alert and run **Recall with memory**.
