@@ -2305,3 +2305,38 @@ body::after {
 
 /* Ensure content sits above particles */
 .app, .bus, .modal-wrap { position: relative; z-index: 1; }
+
+/* --------------------------------------------------- memory card details */
+.mc-expand {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.mc-expand:hover { background: var(--accent-soft); transform: translateX(2px); }
+
+.mc-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  font-size: 11.8px;
+}
+.mc-row { display: flex; gap: 8px; align-items: baseline; line-height: 1.5; color: var(--text-dim); }
+.mc-sig { font-family: var(--mono); font-size: 10px; color: var(--muted); word-break: break-all; }
+.mc-disc { background: rgba(245, 181, 68, 0.06); border-left: 2px solid rgba(245, 181, 68, 0.5); padding-left: 8px; border-radius: 0 4px 4px 0; }
+.mc-resolution { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 11.8px; color: var(--text-dim); }
+.mc-arrow { color: var(--accent); font-weight: 600; }
+.mc-outcome { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; }
+.mc-outcome.resolved { color: var(--good); background: var(--good-soft); }
+.mc-outcome.recurred { color: var(--warn); background: var(--warn-soft); }

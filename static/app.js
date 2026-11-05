@@ -1045,10 +1045,16 @@ function renderMemory() {
               </div>
               ${m.title ? `<div class="mc-title">${esc(m.title)}</div>` : ""}
               <div class="mc-cause"><span class="mc-k">root cause</span>${esc(m.root_cause)}</div>
-              ${m.symptom ? `<div class="mc-symptom"><span class="mc-k">symptom</span>${esc(String(m.symptom).slice(0, 150))}</div>` : ""}
-              ${m.signals && Object.keys(m.signals).length ? `<div class="mc-signals">${esc(Object.entries(m.signals).map(([k,v])=>k+"="+v).join(" · "))}</div>` : ""}
-              ${m.discriminator ? `<div class="mc-disc"><span class="mc-k">how we told it apart</span>${esc(m.discriminator)}</div>` : ""}
               <div class="mc-fix"><span class="mc-k">fix</span>${esc(m.fix)}</div>
+              <button class="mc-expand" onclick="toggleDetail('${m.incident_id}')">show details</button>
+              <div class="mc-details" id="det-${m.incident_id}" hidden>
+                ${m.symptom ? `<div class="mc-row"><span class="mc-k">symptom</span>${esc(String(m.symptom).slice(0, 200))}</div>` : ""}
+                ${m.signals && Object.keys(m.signals).length ? `<div class="mc-row"><span class="mc-k">signals</span><code class="mc-sig">${esc(Object.entries(m.signals).map(([k,v])=>k+"="+v).join(" · "))}</code></div>` : ""}
+                ${m.discriminator ? `<div class="mc-row mc-disc"><span class="mc-k">how we told it apart</span>${esc(m.discriminator)}</div>` : ""}
+                <div class="mc-row"><span class="mc-k">cause class</span>${esc(m.cause_class || "")}</div>
+                <div class="mc-row"><span class="mc-k">date</span>${esc(day(m.created_at))}</div>
+                <div class="mc-row"><span class="mc-k">outcome</span>${esc(m.outcome)} · ${num(m.fix_minutes, 0)} min · ${esc(m.engineer)}</div>
+              </div>
               <div class="mc-foot">
                 <span class="pill-out ${esc(m.outcome)}">${esc(m.outcome)}</span>
                 <span>${num(m.fix_minutes, 0)} min</span>
@@ -1066,6 +1072,11 @@ function renderMemory() {
       renderMemory();
     })
   );
+}
+
+function toggleDetail(id) {
+  const el = document.getElementById("det-" + id);
+  if (el) el.hidden = !el.hidden;
 }
 
 function statCard(label, value, note, tone = "") {
