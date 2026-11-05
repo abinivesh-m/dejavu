@@ -3,6 +3,9 @@
 __pycache__
 *.pyc
 .git
+.vercel
+.tmp-ui
+.hindsight
 data
 .playwright-mcp
 node_modules
