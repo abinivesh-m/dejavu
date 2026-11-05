@@ -1,17 +1,6 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/index.py", "use": "@vercel/python" }
-  ],
-  "routes": [
-    { "src": "/static/(.*)", "dest": "/static/$1" },
-    { "src": "/(.*)", "dest": "api/index.py" }
-  ],
-  "env": {
-    "HINDSIGHT_API_URL": "@hindsight_api_url",
-    "HINDSIGHT_API_KEY": "@hindsight_api_key",
-    "DEJAVU_BANK": "dejavu-oncall",
-    "GROQ_API_KEY": "@groq_api_key",
-    "GROQ_MODEL": "openai/gpt-oss-120b"
-  }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
+  ]
 }

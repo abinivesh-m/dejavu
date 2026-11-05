@@ -6,12 +6,17 @@ Hindsight is the semantic memory layer; SQLite is the operational record
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = ROOT / "data" / "dejavu.db"
+# Vercel (and other serverless) have a read-only filesystem except /tmp.
+if os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"):
+    DB_PATH = Path("/tmp") / "dejavu.db"
+else:
+    DB_PATH = ROOT / "data" / "dejavu.db"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS incidents (

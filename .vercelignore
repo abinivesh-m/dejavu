@@ -1,0 +1,13 @@
+.venv
+.venv-hindsight
+__pycache__
+*.pyc
+.git
+data
+.playwright-mcp
+node_modules
+.env
+.env.*
+!.env.example
+*.log
+*.png

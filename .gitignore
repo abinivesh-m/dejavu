@@ -24,3 +24,5 @@ Thumbs.db
 # demo artifacts
 docs/*.mp4
 docs/*.pptx
+
+.vercel

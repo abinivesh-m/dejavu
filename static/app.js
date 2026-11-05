@@ -600,18 +600,39 @@ function renderVerdict() {
   if (!state.off || !state.on) { el.innerHTML = ""; return; }
   const on = state.on;
   const h = on.hypothesis || {};
-  el.innerHTML = `<div class="verdict-strip fade-in">
-    <div class="vs-side off">
-      <span class="vs-tag">memory off</span>
-      <span class="vs-text">“Restart the pods.”</span>
-      <span class="vs-meta">0 receipts · nothing to audit</span>
+  const offConf = (state.off?.hypothesis?.confidence) || 0.31;
+  const saved = Math.max(0, Math.round((h.fix_minutes ? 45 - h.fix_minutes : 39)));
+  el.innerHTML = `<div class="verdict-hero fade-in">
+    <div class="vh-left">
+      <div class="vh-eyebrow">Same alert · two answers</div>
+      <div class="vh-grid">
+        <div class="vh-col off">
+          <span class="vh-tag">memory off</span>
+          <span class="vh-head">${esc(state.off?.hypothesis?.title || "Generic triage")}</span>
+          <span class="vh-sub">${esc(state.off?.first_action || "Restart the affected pods")}</span>
+          <div class="vh-stats">
+            <span>${pct(offConf)} confidence</span>
+            <span>0 receipts</span>
+            <span>no owner</span>
+          </div>
+        </div>
+        <div class="vh-mid">
+          <div class="vh-arrow">→</div>
+          <div class="vh-saved">≈ ${saved} min saved</div>
+        </div>
+        <div class="vh-col on">
+          <span class="vh-tag on">memory on</span>
+          <span class="vh-head">${esc(h.title)}</span>
+          <span class="vh-sub">${esc(on.first_action || h.fix)}</span>
+          <div class="vh-stats">
+            <span>${pct(h.confidence)} confidence</span>
+            <span>${h.support} receipt${h.support === 1 ? "" : "s"}</span>
+            <span>${num(h.fix_minutes, 0)} min · ${esc(h.engineer)}</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="vs-arrow">→</div>
-    <div class="vs-side on">
-      <span class="vs-tag">memory on</span>
-      <span class="vs-text">${esc(h.title)}</span>
-      <span class="vs-meta">${h.support} receipts · ${num(h.fix_minutes, 0)} min · ${esc(h.engineer)} · ${pct(h.confidence)} confidence</span>
-    </div>
+    <div class="vh-ring">${confidenceRing(h.confidence || 0)}</div>
   </div>`;
 }
 
