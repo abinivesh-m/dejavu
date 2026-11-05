@@ -218,10 +218,15 @@ function renderStage() {
       <div class="empty-ring"></div>
       <h2>No incident selected</h2>
       <p>Fire a demo alert to watch the agent recall what happened last time — and what it got wrong.</p>
-      <button class="btn primary lg" id="btnDemo2">Fire demo alert</button>
+      <div class="empty-actions">
+        <button class="btn primary lg" id="btnDemo2">▶ Run the full story</button>
+        <button class="btn ghost lg" id="btnFire2">Fire an alert</button>
+      </div>
     </div>`;
     const b = $("#btnDemo2");
-    if (b) b.addEventListener("click", () => runStoryless("demo"));
+    if (b) b.addEventListener("click", () => runStory());
+    const f = $("#btnFire2");
+    if (f) f.addEventListener("click", () => runStoryless("demo"));
     return;
   }
 
@@ -880,7 +885,15 @@ function closeModal() {
 /* ------------------------------------------------------------------ chrome */
 
 function bindChrome() {
-  $("#btnDemo").addEventListener("click", () => runStoryless("demo"));
+  $("#btnDemo").addEventListener("click", async () => {
+    const btn = $("#btnDemo");
+    if (state.busy || state.story) return;
+    btn.disabled = true;
+    const prev = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span> Firing…`;
+    try { await runStoryless("demo"); }
+    finally { btn.disabled = false; btn.innerHTML = prev; }
+  });
 
   const story = $("#btnStory");
   if (story) story.addEventListener("click", runStory);

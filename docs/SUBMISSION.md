@@ -12,7 +12,7 @@ Fill the four underlined links once the repo, video, article and demo are live.
 | Team | **NexussForge** |
 | Project | **Déjà Vu — the on-call agent that has seen this before** |
 | GitHub | `<REPO_URL>` |
-| Live demo | `<LIVE_URL>` |
+| Live demo | https://metal-berries-live.loca.lt (tunnel password: 152.57.197.146) |
 | Demo video (YouTube, public, 1080p) | `<VIDEO_URL>` |
 | Hindsight version | open source `v1.2.0`, local server, bank `dejavu-oncall` |
 

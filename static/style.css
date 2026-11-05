@@ -1835,6 +1835,8 @@ main { flex: 1 1 auto; min-height: 0; position: relative; }
 
 /* ------------------------------------------------------------------ table */
 
+.empty-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+
 /* --------------------------------------------------------------- band room */
 
 .band-room {
