@@ -126,7 +126,7 @@ client.retain(
 ```mermaid
 flowchart TD
     A[Alert fires] --> B[Hindsight recall<br/>bank: dejavu-oncall]
-    B -. unreachable .-> D[BM25 over SQLite mirror]
+    B -.-> D[BM25 fallback<br/>over SQLite mirror]
     B --> C[Rank: signal + outcome + recency]
     D --> C
     C --> E[Contradiction guard<br/>name the look-alike]
