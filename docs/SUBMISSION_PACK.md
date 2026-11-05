@@ -81,13 +81,13 @@ Your on-call agent doesn't need a bigger model. It needs a memory.
 I built Déjà Vu: an SRE agent that recalls your own incidents before it answers.
 
 No memory → "restart the pods", 31% confidence, nothing to audit.
-Hindsight memory → the missing composite index on orders(created_at,status), 97%, receipts, 6 minutes, a named engineer.
+Hindsight memory → the missing composite index on orders(created_at,status), 97%, receipts, 6 minutes, an owner.
 
-The important part is what it rules out. A near-identical incident needed a different fix. The agent surfaces it, the one signal that separates them, and why it isn't this one.
+What matters is what it rules out. A near-identical incident needed a different fix. The agent surfaces it, the one signal that separates them, and why it isn't this one.
 
 Memory: one Hindsight bank, one document per incident — cause, fix, outcome, responder as metadata, so every claim is a receipt.
 
-Replayed over 22 incidents with no future knowledge: 33% early, 83% late.
+Replayed 22 incidents blind: 33% early, 83% late.
 
 Repo: [PASTE REPO URL]
 
