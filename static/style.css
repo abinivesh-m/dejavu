@@ -10,9 +10,9 @@
   --panel-2: #f0f1f5;
   --line: #dde0e6;
   --line-soft: #e7e9ef;
-  --text: #1a1d24;
-  --text-dim: #4a505c;
-  --muted: #7a808c;
+  --text: #0f1117;
+  --text-dim: #3a3f4a;
+  --muted: #6b7280;
   --accent: #ff5c1a;
   --accent-soft: rgba(255, 92, 26, 0.10);
   --accent-line: rgba(255, 92, 26, 0.40);
@@ -47,6 +47,7 @@ body {
     radial-gradient(900px 500px at -8% 8%, rgba(37, 99, 235, 0.04), transparent 60%),
     var(--bg);
   overflow: hidden;
+  perspective: 1200px;
 }
 
 ::selection { background: rgba(255, 92, 26, 0.32); }
@@ -1997,6 +1998,43 @@ main { flex: 1 1 auto; min-height: 0; position: relative; }
   line-height: 1.5;
 }
 
+.learned-wrap { margin-bottom: 12px; }
+.learned-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.learned-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.learned-card {
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: var(--panel-2);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+  transform-style: preserve-3d;
+}
+.learned-card:hover { transform: translateY(-3px) rotateX(2deg); border-color: var(--accent-line); }
+.lc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.lc-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.lc-count {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+.lc-meta { font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+
 /* --------------------------------------------------------------- band room */
 
 .band-room {
@@ -2141,3 +2179,17 @@ main { flex: 1 1 auto; min-height: 0; position: relative; }
 
 .table-scroll { max-height: calc(100vh - 300px); overflow-y: auto; }
 
+
+/* --------------------------------------------------- 3d depth + motion */
+.mem-card { transform-style: preserve-3d; }
+.mem-card:hover { transform: translateY(-6px) rotateX(4deg) rotateY(-2deg); box-shadow: 0 28px 56px rgba(0, 0, 0, 0.16); border-color: #c8ccd4; }
+.vh-col { transform-style: preserve-3d; }
+.vh-col:hover { transform: translateY(-4px) rotateX(3deg); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12); }
+.verdict-hero { transform-style: preserve-3d; }
+.verdict-hero:hover { transform: translateY(-2px) rotateX(1deg); box-shadow: 0 22px 50px rgba(0, 0, 0, 0.18); }
+@keyframes floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.empty-ring { animation: floatY 3s ease-in-out infinite; }
+.ring { animation: floatY 4s ease-in-out infinite; }
+@keyframes pulseDot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.4); } }
+.live-pill i { animation: pulseDot 1.4s ease-in-out infinite; }
+.tl-dot { animation: pulseDot 2s ease-in-out infinite; }

@@ -1027,6 +1027,9 @@ function renderMemory() {
 
   const grid = $("#memoryGrid");
   grid.innerHTML =
+    `<div class="learned-wrap">
+       <div class="learned-title">What the bank has learned · ${Object.keys(Object.fromEntries(state.memories.map(m => [m.cause_class || m.root_cause, true]))).length} failure classes</div>
+     </div>` +
     filters +
     (rows.length
       ? rows
