@@ -63,3 +63,5 @@ The improvement is not only in the answer. It is in the shape of the answer. Ver
 If you are building agents that act on operational systems, treat memory as two problems: what to remember, and how to know when the memory does not apply. The first gets the demo. The second gets production trust.
 
 The [Hindsight project](https://github.com/vectorize-io/hindsight) provides the retention and recall primitives; the [Hindsight docs](https://hindsight.vectorize.io) cover the API; and the [Vectorize memory primer](https://vectorize.io/what-is-agent-memory) is a useful grounding in the underlying ideas. Build the discrimination layer yourself. It is where the product lives.
+
+The running agent is at [dejavu-tau.vercel.app](https://dejavu-tau.vercel.app), and the source is at [github.com/abinivesh-m/dejavu](https://github.com/abinivesh-m/dejavu).

@@ -111,14 +111,22 @@ Body: 3–4 sentences on the problem, the before/after numbers (31% vs 97%, 33% 
 
 Four drafts, one per member. Publish each on Dev.to, Hashnode, Medium, or LinkedIn Articles — public and linkable.
 
-| Member | Draft | Words |
-|---|---|---|
-| Abinivesh M | `article.md` | 1455 |
-| Abhinivesh K | `docs/articles/abhinivesh-k.md` | 831 |
-| Mrittika S | `docs/articles/mrittika-s.md` | 918 |
-| HARINI E S | `docs/articles/harini-e-s.md` | 944 |
+| Member | Publish file (ready to paste) | Cover image | Words |
+|---|---|---|---|
+| Abinivesh M | `docs/publish/abinivesh-m.md` | `docs/assets/covers/abinivesh-m.png` | 1461 |
+| Abhinivesh K | `docs/publish/abhinivesh-k.md` | `docs/assets/covers/abhinivesh-k.png` | 834 |
+| Mrittika S | `docs/publish/mrittika-s.md` | `docs/assets/covers/mrittika-s.png` | 921 |
+| HARINI E S | `docs/publish/harini-e-s.md` | `docs/assets/covers/harini-e-s.png` | 949 |
 
-Each includes the three required Hindsight links, a code snippet, and no event name.
+Each includes the three required Hindsight links, a live demo + repo link, a code snippet, and no event name.
+
+**To publish (Dev.to, ~5 minutes per article):**
+
+1. Sign in as the member whose name is on the article.
+2. Create post → click the markdown editor toggle.
+3. Paste the entire publish file, including the `---` block. Dev.to reads the title, description and tags from it.
+4. Upload the matching cover image and set it as the cover.
+5. Click **Publish**, copy the public URL, and add it to the shared links list.
 
 ---
 

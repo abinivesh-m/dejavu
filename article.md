@@ -2,7 +2,7 @@
 
 It is 02:14. Checkout p99 has gone from 400 ms to 3.9 seconds, the payment provider is retrying, and an alert is burning through the error budget.
 
-The engineer who fixed this exact failure six weeks ago is asleep. The postmortem exists somewhere. The migration that actually solved it was applied by hand and never written down. So the person on call does what everyone does at 2 a.m.: they search, they guess, and then they restart the pods.
+The engineer who fixed this exact failure six weeks ago is asleep. The migration that solved it was applied by hand and never written down. So the person on call searches, guesses, and restarts the pods.
 
 The restart works for forty minutes.
 
@@ -12,7 +12,7 @@ I built Déjà Vu to test that claim seriously — an on-call SRE agent whose en
 
 ## What the system actually does
 
-Déjà Vu watches a queue of alerts. When one fires, it builds a query from the alert's service, title, body and full signal fingerprint, recalls candidate incidents from a Hindsight bank called `dejavu-oncall`, re-ranks them, and answers with evidence attached.
+Déjà Vu watches an alert queue. When one fires, it builds a query from the service, title, body and signal fingerprint, recalls candidates from a Hindsight bank called `dejavu-oncall`, re-ranks them, and answers with evidence. One bank per team: your incidents only, never another team's.
 
 The answer is not a paragraph. It is a hypothesis plus receipts:
 
@@ -50,9 +50,9 @@ resp = client().retain(
 )
 ```
 
-That metadata is the difference between a receipt and a rumour. When the agent says "six minutes, Priya Raman, resolved," those values came back from memory, not from the model's imagination.
+That metadata is the difference between a receipt and a rumour. When the agent says "six minutes, Priya Raman, resolved," those values came from memory, not the model's imagination.
 
-Recall is equally deliberate. The alert's fingerprint becomes the query, and Hindsight returns candidates by meaning. Then the application re-ranks them, because retrieval similarity and operational similarity are not the same thing:
+Recall is deliberate: the alert's fingerprint becomes the query, Hindsight returns candidates by meaning, and the application re-ranks them — retrieval similarity and operational similarity are not the same thing:
 
 ```python
 similarity = 0.50 * signal_similarity + 0.45 * text_similarity + 0.05 * coverage
@@ -76,13 +76,13 @@ This is the failure mode of every naive retrieval system. A text search returns 
 
 ## Measurement, not a claim
 
-Every memory product says it improves. Almost none measure it, because measuring it honestly is uncomfortable.
+Every memory product says it improves. Almost none measure it, because honest measurement is uncomfortable.
 
 The repo includes a replay that walks the incident corpus in chronological order. At each incident, the agent may only use memories that existed **before** that timestamp. No peeking. No LLM in the grading loop.
 
 Across 22 graded incidents: **50% top-1**, **64% top-3**. First six graded alerts: **33%**. Last six: **83%**.
 
-That last pair is the whole thesis. The agent is measurably better at the end of the quarter than at the start, because it lived through the quarter. The Learning screen plots every graded incident, including the ones it got wrong. A memory system that only shows its wins is a marketing surface.
+That pair is the thesis. The agent is measurably better at the end of the quarter than at the start, because it lived through the quarter. The Learning screen plots every graded incident, including the ones it got wrong. A memory system that only shows its wins is a marketing surface.
 
 ## The loop has to close
 
@@ -90,15 +90,15 @@ Resolving an alert is not the end of the interaction. It is the write. When an e
 
 That closed loop is also where a second agent earns its place. In the Band room, `DejaVu-Recall` posts the hypothesis and receipts, then `DejaVu-Critic` answers the recall — not the alert — with four deterministic checks: at least two receipts, no stale precedent, precedent fixes that held, confidence above threshold. It can block the fix from ever reaching a human.
 
-I wrote the critic as code, not as another model call, because a reviewer should check evidence, not generate more of it.
+I wrote the critic as code, not a model call: a reviewer should check evidence, not generate more of it.
 
 ## What I got wrong
 
 Three things, in order of embarrassment.
 
-First, I scoped recall to the same service. That hid the useful lesson: a missing index on `payments-api` is the same failure as a missing index on `checkout-api`. Cross-service transfer is where most of the late-corpus accuracy came from.
+First, I scoped recall to the same service. That hid the lesson: a missing index on `payments-api` is the same failure as one on `checkout-api`. Cross-service transfer drove most of the late-corpus accuracy.
 
-Second, I graded at string level before switching to failure classes. "Missing index on orders" and "missing index on settlement_date" are different strings and the same lesson. String-level grading made the agent look worse than it was, and would have made me tune the wrong thing.
+Second, I graded at string level before switching to failure classes. "Missing index on orders" and "missing index on settlement_date" are different strings and the same lesson. String-level grading made the agent look worse than it was.
 
 Third, I trusted retrieval scores for too long. The signal fingerprint is weighted above text on purpose now. The text is how you find candidates; the numbers are how you decide.
 
@@ -106,7 +106,7 @@ Third, I trusted retrieval scores for too long. The signal fingerprint is weight
 
 First-time failures cannot be recalled. If the team has never seen it, memory has nothing, and the Learning screen shows exactly those incidents as misses.
 
-Per-service histories are small — eight to ten incidents each — so cross-service transfer helps but is not evidence of production-scale performance. The corpus is synthetic, because real incident data is confidential, and the ranking weights were tuned on it. A production deployment needs re-tuning against real signals and a plan for the long tail of incidents that happen once.
+Per-service histories hold eight to ten incidents, so cross-service transfer helps but is not evidence of production-scale performance. The corpus is synthetic — real incident data is confidential — and the weights were tuned on it. A production deployment needs re-tuning against real signals and a plan for the long tail of incidents that happen once.
 
 And memory can be wrong. Precedent is not proof. That is why every answer carries confidence, receipts, and a visible trace of which path served it. When Hindsight is unreachable, the app serves from a BM25 index over the same SQLite mirror and the header badge changes from `HINDSIGHT` to `BM25 FALLBACK`. A demo should not die because a service did not start, but it should never pretend which path answered.
 
@@ -119,3 +119,5 @@ Hindsight made the memory layer the easy part: a bank, a retain with real metada
 At 2 a.m., the question is not "what does a good SRE do?" It is "what did we do last time, did it work, and who can I ask?"
 
 If you are building agents with memory, start with [Hindsight's open-source memory engine](https://github.com/vectorize-io/hindsight) and read the [Hindsight documentation](https://hindsight.vectorize.io/). It is also worth getting clear on [what agent memory actually means](https://vectorize.io/what-is-agent-memory) before you design a schema you will regret.
+
+Running agent: [dejavu-tau.vercel.app](https://dejavu-tau.vercel.app). Source, including the replay harness: [github.com/abinivesh-m/dejavu](https://github.com/abinivesh-m/dejavu).

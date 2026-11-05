@@ -62,3 +62,5 @@ The second answer is not better because the model is smarter. It is better becau
 That is the case for agent memory in production systems. Not a chatbot with a longer context window. A system that remembers specific incidents, cites them, learns from resolutions, and can be checked afterwards.
 
 If you are building in this space, start with the receipt. Decide what a citation must contain, then design retention and retrieval backwards from it. The [Hindsight repository](https://github.com/vectorize-io/hindsight) is open source, and the [Vectorize primer on agent memory](https://vectorize.io/what-is-agent-memory) is a good place to pressure-test the model. Memory is only valuable when someone can verify it.
+
+The running agent is at [dejavu-tau.vercel.app](https://dejavu-tau.vercel.app), and the source is at [github.com/abinivesh-m/dejavu](https://github.com/abinivesh-m/dejavu).

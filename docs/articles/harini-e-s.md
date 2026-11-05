@@ -36,7 +36,7 @@ The output is a sequence of predictions with a running accuracy, not a single ag
 Across 22 graded incidents:
 
 - **top-1 accuracy: 50%** — the correct failure class on the first guess
-- **top-3 accuracy: 64%** — the correct class in the shortlist
+- **top-3 accuracy: 64%** — the correct class in the top three
 - **first six graded alerts: 33%**
 - **last six graded alerts: 83%**
 
@@ -48,7 +48,7 @@ We surface both sides in the product. The Learning tab shows the cumulative curv
 
 ## Why not just ask an LLM to grade it?
 
-Because the point is to test memory, not model capability. An LLM judge introduces its own priors, its own variance and its own cost. A deterministic ranker over the as-of corpus is reproducible: the same corpus produces the same curve. If the curve improves, the improvement came from retrieval, which is what the memory layer controls.
+Because the point is to test memory, not model capability. An LLM grader introduces its own priors, its own variance and its own cost. A deterministic ranker over the as-of corpus is reproducible: the same corpus produces the same curve. If the curve improves, the improvement came from retrieval, which is what the memory layer controls.
 
 This does not mean the production agent is deterministic. In production, Hindsight recalls candidates by meaning, the application re-ranks them against the live signal fingerprint, and a language model writes the final hypothesis from the receipts. The replay isolates one variable — whether the right past incident was available and ranked highly — so the rest of the system can be evaluated separately.
 
@@ -69,3 +69,5 @@ Until then, the honest claim is narrow and testable: on a chronological replay w
 That is a better claim than "it remembers." It is falsifiable.
 
 The [Hindsight repository](https://github.com/vectorize-io/hindsight) is open source, the [documentation](https://hindsight.vectorize.io) covers retention and recall, and the [Vectorize primer](https://vectorize.io/what-is-agent-memory) is a good conceptual starting point. Build the replay harness before you build the landing page. The curve will tell you whether you have a product.
+
+The running agent is at [dejavu-tau.vercel.app](https://dejavu-tau.vercel.app), and the source, including the replay harness, is at [github.com/abinivesh-m/dejavu](https://github.com/abinivesh-m/dejavu).

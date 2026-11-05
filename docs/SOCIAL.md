@@ -15,18 +15,22 @@ Repository: https://github.com/abinivesh-m/dejavu
 
 ## 1 · Abinivesh M — the builder
 
-Your on-call agent doesn't need a bigger model. It needs a memory.
+At 2 a.m., checkout is burning. The engineer who fixed this exact failure six weeks ago is asleep.
+
+So the person on call restarts the pods. It holds for forty minutes.
 
 I built Déjà Vu: an SRE agent that recalls your own incidents before it answers.
 
-No memory → "restart the pods", 31% confidence, nothing to audit.
-Hindsight memory → the missing composite index on orders(created_at,status), 97%, receipts, 6 minutes, an owner.
+No memory → generic triage, 31%, nothing to audit.
+Hindsight → the missing composite index, 97%, the engineer, the six-minute fix.
 
-What matters is what it rules out. A near-identical incident needed a different fix. The agent surfaces it, the one signal that separates them, and why it isn't this one.
+It also names the look-alike incident it ruled out, and the one signal that separates them.
 
-Memory: one Hindsight bank, one document per incident — cause, fix, outcome, responder as metadata, so every claim is a receipt.
+One Hindsight bank, one document per incident — cause, fix, outcome, owner — so every claim is a receipt.
 
-Replayed 22 incidents blind: 33% early, 83% late.
+22 incidents replayed blind: 33% early, 83% late.
+
+The model didn't get smarter. The team's memory did.
 
 Repo: https://github.com/abinivesh-m/dejavu
 
