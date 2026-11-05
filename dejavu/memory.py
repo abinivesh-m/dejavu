@@ -349,16 +349,50 @@ def search(q: str, limit: int = 50) -> list[dict]:
         try:
             hits, _ = _recall_hindsight(q, limit)
             if hits:
-                return hits
+                return _enrich(hits)
         except Exception:
             pass
     with db.connect() as con:
         rows = [dict(r) for r in con.execute("SELECT * FROM memories").fetchall()]
     if not q:
         rows.sort(key=lambda r: r["created_at"], reverse=True)
-        return [_row_hit(r, 1.0) for r in rows[:limit]]
+        hits = [_row_hit(r, 1.0) for r in rows[:limit]]
+        return _enrich(hits)
     hits, _ = _bm25(q, rows, limit)
-    return hits
+    return _enrich(hits)
+
+
+def _enrich(hits: list[dict]) -> list[dict]:
+    """Attach the human-readable incident context to each memory hit."""
+    ids = [h.get('incident_id') for h in hits if h.get('incident_id')]
+    incs = {}
+    if ids:
+        placeholders = ','.join('?' for _ in ids)
+        with db.connect() as con:
+            for r in con.execute(
+                'SELECT id, title, severity, symptom, discriminator, tags, signals FROM incidents WHERE id IN (' + placeholders + ')',
+                ids,
+            ):
+                incs[r['id']] = dict(r)
+    out = []
+    for h in hits:
+        inc = incs.get(h.get("incident_id")) or {}
+        h = dict(h)
+        h["title"] = inc.get("title") or h.get("title") or ""
+        h["severity"] = inc.get("severity") or ""
+        h["symptom"] = inc.get("symptom") or ""
+        h["discriminator"] = inc.get("discriminator") or ""
+        try:
+            h["tags"] = db.json_load(inc.get("tags", "[]"))
+        except Exception:
+            h["tags"] = []
+        if not h.get("signals"):
+            try:
+                h["signals"] = db.json_load(inc.get("signals", "{}"))
+            except Exception:
+                h["signals"] = {}
+        out.append(h)
+    return out
 
 
 def stale_memories() -> list[dict]:

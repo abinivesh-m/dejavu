@@ -1031,16 +1031,21 @@ function renderMemory() {
     (rows.length
       ? rows
           .map((m) => {
-            const live = String(m.memory_id || "").includes("LIVE");
+            const live = String(m.memory_id || "").includes("LIVE") || String(m.incident_id || "").includes("LIVE");
             return `<article class="mem-card ${m.stale ? "is-stale" : ""}">
               <div class="mc-top">
                 <span class="rid">${esc(m.incident_id)}</span>
-                <span class="sev ${m.service === "checkout-api" ? "SEV-2" : "SEV-3"}" style="border:0;background:transparent;padding:0;color:var(--muted)">${esc(m.service)}</span>
+                ${m.severity ? `<span class="sev ${esc(m.severity)}">${esc(m.severity)}</span>` : ""}
+                <span class="mc-service">${esc(m.service)}</span>
                 ${live ? `<span class="chip good" style="margin-left:auto">learned live</span>` : ""}
                 ${m.stale ? `<span class="chip warn" style="margin-left:auto">stale</span>` : ""}
               </div>
-              <div class="mc-cause">${esc(m.root_cause)}</div>
-              <div class="mc-fix">${esc(m.fix)}</div>
+              ${m.title ? `<div class="mc-title">${esc(m.title)}</div>` : ""}
+              <div class="mc-cause"><span class="mc-k">root cause</span>${esc(m.root_cause)}</div>
+              ${m.symptom ? `<div class="mc-symptom"><span class="mc-k">symptom</span>${esc(String(m.symptom).slice(0, 150))}</div>` : ""}
+              ${m.signals && Object.keys(m.signals).length ? `<div class="mc-signals">${esc(Object.entries(m.signals).map(([k,v])=>k+"="+v).join(" · "))}</div>` : ""}
+              ${m.discriminator ? `<div class="mc-disc"><span class="mc-k">how we told it apart</span>${esc(m.discriminator)}</div>` : ""}
+              <div class="mc-fix"><span class="mc-k">fix</span>${esc(m.fix)}</div>
               <div class="mc-foot">
                 <span class="pill-out ${esc(m.outcome)}">${esc(m.outcome)}</span>
                 <span>${num(m.fix_minutes, 0)} min</span>
