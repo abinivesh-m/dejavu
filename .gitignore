@@ -1,0 +1,26 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv*/
+venv/
+
+# data
+data/*.db
+data/*.db-wal
+data/*.db-shm
+.hindsight/
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# demo artifacts
+docs/*.mp4
+docs/*.pptx

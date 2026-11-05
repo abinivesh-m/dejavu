@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: dejavu
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: HINDSIGHT_API_URL
+        sync: false
+      - key: HINDSIGHT_API_KEY
+        sync: false
+      - key: DEJAVU_BANK
+        value: dejavu-oncall
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: BAND_API_KEY
+        sync: false
+      - key: BAND_CHAT_ID
+        sync: false
+      - key: BAND_API_URL
+        value: https://app.band.ai

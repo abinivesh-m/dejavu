@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Déjà Vu — the on-call agent that has seen this before</title>
+<meta name="description" content="Incident memory with receipts: recall what fixed it, what failed, and why this time is different." />
+<link rel="stylesheet" href="/static/style.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='none' stroke='%23ff5c1a' stroke-width='10'/><circle cx='50' cy='50' r='12' fill='%23ff5c1a'/></svg>" />
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" stroke-width="4" opacity=".35"/>
+        <circle cx="24" cy="24" r="10" fill="none" stroke="currentColor" stroke-width="4"/>
+        <circle cx="24" cy="24" r="3.5" fill="currentColor"/>
+        <circle cx="38" cy="12" r="3" fill="currentColor"/>
+      </svg>
+      <div class="brand-text">
+        <h1>Déjà&nbsp;Vu</h1>
+        <p>the on-call agent that has seen this before</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="badges">
+        <span class="badge" id="memBadge"><i class="dot"></i><span>memory …</span></span>
+        <span class="badge" id="llmBadge"><i class="dot"></i><span>model …</span></span>
+      </div>
+      <button class="btn primary" id="btnStory" title="Plays the whole 60-second story: alert → memory off → memory on → resolve → repeat">
+        <span class="play">▶</span> Run the story
+      </button>
+      <button class="btn ghost" id="btnDemo" title="Fire the demo alert only (D)">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13 6.4 8.6 2 7l4.4-1.6z" fill="currentColor"/></svg>
+        Fire alert
+      </button>
+      <button class="btn ghost" id="btnReset" title="Reset alerts and analyses">Reset</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="live">Live incident</button>
+    <button class="tab" data-tab="memory">Memory <span class="count" id="memCount">–</span></button>
+    <button class="tab" data-tab="learning">Learning</button>
+    <button class="tab" data-tab="incidents">Incidents</button>
+  </nav>
+
+  <main>
+    <!-- ---------------------------------------------------------------- LIVE -->
+    <section class="panel active" id="tab-live">
+      <aside class="rail">
+        <div class="rail-head">
+          <h2>Alert queue</h2>
+          <span class="live-pill"><i></i> live</span>
+        </div>
+        <div id="alertList" class="alert-list"></div>
+        <div class="rail-note">
+          <strong>Try it</strong>
+          <p>Run the story, or fire an alert yourself and compare memory off vs on.</p>
+          <div class="keys">
+            <span><kbd>D</kbd> demo</span>
+            <span><kbd>S</kbd> story</span>
+            <span><kbd>M</kbd> recall</span>
+            <span><kbd>R</kbd> resolve</span>
+            <span><kbd>B</kbd> bus</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="stage" id="stage">
+        <div class="empty" id="emptyState">
+          <div class="empty-ring"></div>
+          <h2>No incident selected</h2>
+          <p>Fire a demo alert to watch the agent recall what happened last time — and what it got wrong.</p>
+          <button class="btn primary lg" id="btnDemo2">Fire demo alert</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------------- MEMORY -->
+    <section class="panel page" id="tab-memory">
+      <div class="page-head">
+        <div>
+          <h2>What the agent remembers</h2>
+          <p class="sub">Every row is a real retained incident. Outcome, engineer and time are attached, so a fix can be audited — not just suggested.</p>
+        </div>
+        <div class="searchbox">
+          <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.5 13.5L18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input id="memSearch" placeholder="Search memories: pool, DNS, certificate…" autocomplete="off" />
+        </div>
+      </div>
+      <div class="stat-row" id="memStats"></div>
+      <div class="memory-grid" id="memoryGrid"></div>
+    </section>
+
+    <!-- ------------------------------------------------------------ LEARNING -->
+    <section class="panel page" id="tab-learning">
+      <div class="page-head">
+        <div>
+          <h2>The learning curve</h2>
+          <p class="sub">A replay over the seeded corpus: at each incident, the agent may only use memories that existed <em>before</em> it. No future knowledge, no LLM.</p>
+        </div>
+        <span class="badge neutral" id="replayBadge">computing…</span>
+      </div>
+      <div class="stat-row" id="learnStats"></div>
+      <div class="card chart-card">
+        <div class="chart-head">
+          <h3>Top-1 accuracy as memory grows</h3>
+          <div class="legend"><span class="lg ok"></span> correct <span class="lg bad"></span> missed</div>
+        </div>
+        <div id="chart"></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <h3 class="good">Where memory helped</h3>
+          <div id="sampleRight" class="samples"></div>
+        </div>
+        <div class="card">
+          <h3 class="bad">Where it did not — first time we had ever seen it</h3>
+          <div id="sampleWrong" class="samples"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ----------------------------------------------------------- INCIDENTS -->
+    <section class="panel page" id="tab-incidents">
+      <div class="page-head">
+        <div>
+          <h2>The incident corpus</h2>
+          <p class="sub">34 synthetic incidents across 4 services over 90 days, designed so failure classes recur and the agent can actually learn.</p>
+        </div>
+      </div>
+      <div class="card table-card">
+        <table class="table" id="incTable">
+          <thead><tr><th>Incident</th><th>Date</th><th>Service</th><th>What happened</th><th>Cause class</th><th>Outcome</th><th class="r">Time</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bus">
+    <button class="bus-head" id="busToggle">
+      <span class="bus-title"><i class="pulse"></i> Memory bus</span>
+      <span class="bus-meta" id="busMeta">retain · recall · reflect</span>
+      <span class="chev">▾</span>
+    </button>
+    <div class="bus-body" id="busBody">
+      <div class="bus-log" id="busLog"></div>
+    </div>
+  </footer>
+</div>
+
+<!-- resolve modal -->
+<div class="modal-wrap hidden" id="modalWrap">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Teach the agent what actually fixed it</h3>
+      <button class="icon-btn" id="modalClose" aria-label="Close">✕</button>
+    </div>
+    <p class="modal-sub">This is retained as a new memory, with your name and the time it took. The next alert with this fingerprint gets the answer instantly.</p>
+    <form id="resolveForm">
+      <label>Root cause<input name="root_cause" required /></label>
+      <label>Fix applied<input name="fix" required /></label>
+      <div class="form-row">
+        <label>Your name<input name="engineer" value="Abinivesh M" required /></label>
+        <label>Minutes to resolve<input name="minutes" type="number" min="1" max="600" value="6" required /></label>
+      </div>
+      <label>Outcome
+        <select name="outcome">
+          <option value="resolved">Resolved — the fix held</option>
+          <option value="recurred">Recurred — it came back</option>
+        </select>
+      </label>
+      <input type="hidden" name="alert_id" />
+      <input type="hidden" name="cause_class" />
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="modalCancel">Cancel</button>
+        <button type="submit" class="btn primary" id="resolveSubmit">Retain this lesson</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
