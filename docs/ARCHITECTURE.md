@@ -139,7 +139,7 @@ If the runner-up class has a different root cause and is within `0.18` similarit
 - **why it is not this one** — the incident's `discriminator`
 - the different fix it required
 
-This is the part judges remember, because it is the failure mode of every naive RAG incident bot: two incidents that read identically but are not the same.
+This is the failure mode of every naive RAG incident bot: two incidents that read identically but are not the same. Naming the look-alike and the signal that separates it is what makes the answer safe to act on.
 
 ## Closed loop
 

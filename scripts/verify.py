@@ -1,4 +1,4 @@
-"""Final verification. Run before submission.
+"""Release verification. Run before shipping a build.
 
     python -m scripts.verify
 """

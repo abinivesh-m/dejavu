@@ -1,6 +1,6 @@
 """Synthetic but realistic incident corpus for Deja Vu.
 
-26 incidents across 4 services and 90 days, plus one deliberately stale
+34 incidents across 4 services and 90 days, plus one deliberately stale
 memory from last year so the agent has something to be appropriately
 suspicious about. Every row is labelled ``source='seed'`` in SQLite and the
 README says the corpus is synthetic.

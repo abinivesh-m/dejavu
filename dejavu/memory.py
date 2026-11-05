@@ -5,7 +5,7 @@ Fallback path: in-process BM25 over the SQLite mirror.
 
 The fallback exists for one reason: a live demo must not die because a
 background service did not start. The UI always shows which path served the
-request, so nothing is hidden from judges.
+request, so the answer never misrepresents where it came from.
 """
 from __future__ import annotations
 

@@ -95,7 +95,7 @@ async function boot() {
   startMotion();
   const hash = location.hash.replace("#", "");
   if (["live", "memory", "learning", "incidents"].includes(hash)) switchTab(hash);
-  // Judges should not have to hunt for the demo: /?tour=1 runs the 60-second story.
+  // /?tour=1 runs the 60-second story on load.
   if (new URLSearchParams(location.search).get("tour") === "1") {
     setTimeout(() => runStory(), 900);
   }
