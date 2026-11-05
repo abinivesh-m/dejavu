@@ -103,8 +103,8 @@ support, outcome and recency as tie-breakers and a penalty for stale memory.
 | Without memory | With Hindsight |
 |---|---|
 | "Restart the affected pods" | The missing composite index, by name |
-| 31% confidence | 87% confidence |
-| No incident, no owner, no hours | 3 receipts, Priya Raman, 6 minutes |
+| 31% confidence | 97% confidence |
+| No incident, no owner, no hours | receipts, Priya Raman, 6 minutes |
 | Nothing to audit | Every claim links to an incident |
 | Repeat at 09:41 gets the same generic answer | Repeat is answered in milliseconds from the incident just learned |
 
@@ -202,7 +202,7 @@ team follows the plan, ownership and approvals in the desktop app.
 > Déjà Vu is an on-call agent with a Hindsight memory bank. The same alert,
 > answered twice: without memory it says "restart the pods" at 31%. With
 > memory it names the missing index, cites three incidents, an engineer and
-> six minutes, at 87% — and tells you which look-alike incident it ruled out
+> six minutes, at 97% — and tells you which look-alike incident it ruled out
 > and why.
 >
 > Then you resolve it, and the lesson is retained. Fire the same fingerprint

@@ -55,7 +55,7 @@ This is also where the honest failure mode lives. If Hindsight is unreachable, t
 
 ## What provenance buys you
 
-The practical result is a different kind of answer. Without memory: generic triage, roughly 31% confidence, no owner, no time estimate, nothing to audit. With memory: the missing index, three receipts, a named engineer, a six-minute fix, and a stated reason the connection-leak theory was rejected — around 87% confidence.
+The practical result is a different kind of answer. Without memory: generic triage, roughly 31% confidence, no owner, no time estimate, nothing to audit. With memory: the missing index, the receipts, a named engineer, a six-minute fix, and a stated reason the connection-leak theory was rejected — around 97% confidence.
 
 The second answer is not better because the model is smarter. It is better because the model was handed evidence.
 

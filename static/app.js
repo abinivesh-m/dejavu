@@ -853,9 +853,10 @@ async function runStory() {
     if (state.storyAbort) return;
 
     const bank = state.overview?.counts?.memories ?? 34;
-    storyAct(3, `Memory on — ${bank} retained incidents`, "Same alert. Hindsight recalls the missing composite index, three receipts, and the engineer who fixed it in 6 minutes.");
-    toast(`Memory ON: same alert, now with ${bank} retained incidents.`);
     await runAnalysis("on");
+    const receipts = state.on?.evidence?.length || 0;
+    storyAct(3, `Memory on — ${bank} retained incidents`, `Same alert. Hindsight recalls the missing composite index, ${receipts} receipts, and the engineer who fixed it in 6 minutes.`);
+    toast(`Memory ON: same alert, now with ${bank} retained incidents.`);
     await sleep(2600);
     if (state.storyAbort) return;
 

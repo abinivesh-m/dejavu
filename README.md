@@ -21,8 +21,8 @@ The same alert, answered twice.
 |---|---|---|
 | Hypothesis | "Generic triage for checkout-api" | **Missing composite index on `orders(created_at,status)`** |
 | First action | "Restart the affected pods" | `CREATE INDEX CONCURRENTLY` + verify the query plan |
-| Evidence | none | `INC-1006`, `INC-1001`, `INC-1002` |
-| Confidence | 31% | **87%** |
+| Evidence | none | `INC-1006`, `INC-1001` |
+| Confidence | 31% | **97%** |
 | Owner | — | Priya Raman |
 | Fix time | — | 6 minutes |
 | Outcome | — | resolved, 2/2 times |

@@ -60,7 +60,7 @@ room does next.
 ```
 **Checkout p99 3.9s again, same pool signature** — checkout-api
 
-Hypothesis: **Missing composite index on orders(created_at,status)** (87%)
+Hypothesis: **Missing composite index on orders(created_at,status)** (97%)
 First action: CREATE INDEX CONCURRENTLY idx_orders_created_status ...
 
 Receipts:
@@ -76,10 +76,10 @@ Ruled out `INC-1009` — the pool size was capped by a config rollout...
 ```
 **ALLOW** — Every claim is backed by two or more current, successful receipts.
 
-✓ at least two independent receipts (3 receipts)
+✓ at least two independent receipts (receipts)
 ✓ no stale precedent in the top receipts (all current)
 ✓ precedent fixes actually held (all resolved)
-✓ confidence above the action threshold (87%)
+✓ confidence above the action threshold (97%)
 ```
 
 **Handoff — message (only when `BAND_HUMAN_ID` is set)**

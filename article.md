@@ -20,7 +20,7 @@ The answer is not a paragraph. It is a hypothesis plus receipts:
 - `INC-1001` — same cause class — resolved
 - `INC-1002` — same class — resolved
 
-Same alert, memory off: *"generic triage, restart the affected pods"*, 31% confidence, no incident, no owner, no fix time. Memory on: the index migration, 87% confidence, three receipts, a named engineer. The second answer is not smarter. It is informed.
+Same alert, memory off: *"generic triage, restart the affected pods"*, 31% confidence, no incident, no owner, no fix time. Memory on: the index migration, 97% confidence, the receipts, a named engineer. The second answer is not smarter. It is informed.
 
 ## Making memory the actual product
 

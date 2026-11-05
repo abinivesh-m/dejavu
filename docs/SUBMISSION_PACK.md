@@ -10,7 +10,7 @@
 | Phone Number | Ready | team leader enters |
 | Team Name | Ready | `NexussForge` (code `e06cce29`) |
 | Team Members | Ready | Abinivesh M, Abhinivesh K, Mrittika S, HARINI E S |
-| GitHub Repository | **Needs action** | create public repo and paste URL |
+| GitHub Repository | **Ready** | https://github.com/abinivesh-m/dejavu |
 | Social Media Post on LinkedIn | **Needs action** | publish post 1, paste URL |
 | Article link | **Needs action** | publish the builder article, paste URL |
 | Video Link | **Needs action** | record 2–5 min demo, upload to YouTube public |
@@ -28,7 +28,7 @@ https://forms.gle/BGcky3M6Nw1pBEPw6
 
 - Live demo: https://dejavu-tau.vercel.app
 - Judge tour (auto-runs the story): https://dejavu-tau.vercel.app/?tour=1
-- GitHub repository: `[PASTE PUBLIC REPO URL]`
+- GitHub repository: https://github.com/abinivesh-m/dejavu
 - LinkedIn post: `[PASTE POST URL]`
 - Article: `[PASTE ARTICLE URL]`
 - Video: `[PASTE YOUTUBE URL]`
@@ -81,7 +81,7 @@ Your on-call agent doesn't need a bigger model. It needs a memory.
 I built Déjà Vu: an SRE agent that recalls your own incidents before it answers.
 
 No memory → "restart the pods", 31% confidence, nothing to audit.
-Hindsight memory → the missing composite index on orders(created_at,status), 87%, 3 receipts, 6 minutes, a named engineer.
+Hindsight memory → the missing composite index on orders(created_at,status), 97%, receipts, 6 minutes, a named engineer.
 
 The important part is what it rules out. A near-identical incident needed a different fix. The agent surfaces it, the one signal that separates them, and why it isn't this one.
 
@@ -103,7 +103,7 @@ Subreddit: r/llmdevs (or r/aiagents, r/aimemory, r/sideproject)
 
 Title: `I gave an on-call agent long-term incident memory. It started ruling out look-alike incidents.`
 
-Body: 3–4 sentences on the problem, the before/after numbers (31% vs 87%, 33% → 83% replay), then the article link. Add the live demo and repo link in a comment, not the body, if the subreddit restricts self-promotion.
+Body: 3–4 sentences on the problem, the before/after numbers (31% vs 97%, 33% → 83% replay), then the article link. Add the live demo and repo link in a comment, not the body, if the subreddit restricts self-promotion.
 
 ---
 

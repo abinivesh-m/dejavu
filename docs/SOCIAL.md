@@ -9,7 +9,7 @@ Rules from the content guide, applied to every post below:
 - No hashtags or links in the first two lines.
 - Project link in the post body; Hindsight repo link in the first comment.
 
-Replace `<REPO_URL>` with the public repository before publishing.
+Repository: https://github.com/abinivesh-m/dejavu
 
 ---
 
@@ -20,7 +20,7 @@ Your on-call agent doesn't need a bigger model. It needs a memory.
 I built Déjà Vu: an SRE agent that recalls your own incidents before it answers.
 
 No memory → "restart the pods", 31% confidence, nothing to audit.
-Hindsight memory → the missing composite index on orders(created_at,status), 87%, 3 receipts, 6 minutes, a named engineer.
+Hindsight memory → the missing composite index on orders(created_at,status), 97%, receipts, 6 minutes, a named engineer.
 
 The important part is what it rules out. A near-identical incident needed a different fix. The agent surfaces it, the one signal that separates them, and why it isn't this one.
 
@@ -28,7 +28,7 @@ Memory: one Hindsight bank, one document per incident — cause, fix, outcome, r
 
 Replayed over 22 incidents with no future knowledge: 33% early, 83% late.
 
-Repo: <REPO_URL>
+Repo: https://github.com/abinivesh-m/dejavu
 
 #AIAgents #AgentMemory #Hindsight #LLM #SRE
 
@@ -51,7 +51,7 @@ The answer lands where the team already is, with the evidence attached.
 
 Memory: Hindsight. Coordination: Band.
 
-Repo: <REPO_URL>
+Repo: https://github.com/abinivesh-m/dejavu
 
 #AIAgents #AgentMemory #Hindsight #MultiAgent #SRE
 
@@ -71,7 +71,7 @@ Behind it is Hindsight: a memory bank where each incident keeps its signals, fix
 
 Replaying 22 incidents with no future knowledge: 33% accuracy early, 83% late. It improved because it remembered.
 
-Repo: <REPO_URL>
+Repo: https://github.com/abinivesh-m/dejavu
 
 #AIAgents #AgentMemory #Hindsight #AIMemory #SRE
 
@@ -91,7 +91,7 @@ And when you resolve something at 3 a.m., it keeps that lesson for the next pers
 
 The memory layer is Hindsight. The difference is not more confidence. It is more context.
 
-Repo: <REPO_URL>
+Repo: https://github.com/abinivesh-m/dejavu
 
 #AIAgents #AgentMemory #Hindsight #LLM #SRE
 
