@@ -119,6 +119,20 @@ client.retain(
 
 > **Honest fallback.** If the Hindsight server is unreachable, the app serves from a BM25 index over the same SQLite mirror, and the header badge says `BM25 FALLBACK` instead of `HINDSIGHT`. A live demo should never die because a background service did not start — and it should never lie about which path served the answer.
 
+## Two agents, one room
+
+The verdict is not posted by one model talking to itself. Déjà Vu runs as two agents in a Band room:
+
+- **DejaVu-Recall** posts the hypothesis, the receipts and the first action.
+- **DejaVu-Critic** answers the recall — not the alert — with four checks: two current receipts, no stale precedent, fixes that held, confidence above the action threshold. It can **block** the fix before a human sees it.
+- The human approves in the same thread.
+
+<img src="docs/assets/band-room.png" alt="Band room: recall post, critic ALLOW with four checks, mention handoff" width="900">
+
+*Production room, 5 Nov 2026, 9:59 pm. The critic's four checks are computed from the evidence the recall agent cited — it is a reviewer, not a second guess.*
+
+The same transcript is written to SQLite and rendered in the app's Band panel. With no credentials the panel is a **local preview**; the deployed demo posts to a live room.
+
 ---
 
 ## Architecture
@@ -291,7 +305,7 @@ python -m scripts.smoke    # off → on → resolve → repeat → replay
 - First-time failures cannot be recalled. The Learning screen shows exactly where that happened.
 - Per-service histories are small (4–12 incidents each, ledger-worker the thinnest); cross-service transfer helps but is not proven at production scale.
 - The corpus is synthetic; the ranking weights were tuned on it.
-- Band is an optional bridge, off by default.
+- Band is a bridge, not a dependency: the room is live in the deployed demo, and the app falls back to a labelled local preview when no credentials are set.
 
 ---
 
