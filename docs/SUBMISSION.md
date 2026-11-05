@@ -12,20 +12,54 @@ Fill the four underlined links once the repo, video, article and demo are live.
 | Team | **NexussForge** |
 | Project | **Déjà Vu — the on-call agent that has seen this before** |
 | GitHub | `<REPO_URL>` |
-| Live demo | https://metal-berries-live.loca.lt (tunnel password: 152.57.197.146) |
+| Live demo | https://dejavu-tau.vercel.app |
 | Demo video (YouTube, public, 1080p) | `<VIDEO_URL>` |
-| Hindsight version | open source `v1.2.0`, local server, bank `dejavu-oncall` |
+| Hindsight version | open source `v1.2.0`, bank `dejavu-oncall` (local demo) · Cloud env vars required for the green badge on Vercel |
 
 ### Member content
 
-| Member | Article | Social post |
+| Member | Article draft | Social post |
 |---|---|---|
-| Abinivesh M | `<ARTICLE_URL>` | `<POST_URL>` |
-| Abhinivesh K | `<ARTICLE_URL>` | `<POST_URL>` |
-| Mrittika S | `<ARTICLE_URL>` | `<POST_URL>` |
-| Harini E S | `<ARTICLE_URL>` | `<POST_URL>` |
+| Abinivesh M | `article.md` | `<POST_URL>` |
+| Abhinivesh K | `docs/articles/abhinivesh-k.md` | `<POST_URL>` |
+| Mrittika S | `docs/articles/mrittika-s.md` | `<POST_URL>` |
+| Harini E S | `docs/articles/harini-e-s.md` | `<POST_URL>` |
+
+Drafts are 800–1,500 words, contain the three required Hindsight links and a
+code snippet, and avoid naming the event. Publish each under the member's own
+byline, then replace the draft paths with public URLs.
 
 One team video covers all four members.
+
+### Enabling Hindsight Cloud on the Vercel demo
+
+Vercel runs the app serverless; it cannot host the Hindsight API itself. The
+paid promo code is optional — Hindsight Cloud includes free starting credits on
+signup, so no code is needed:
+
+1. Sign up at <https://ui.hindsight.vectorize.io/signup>.
+2. Create an API key in the dashboard. The bank `dejavu-oncall` is created
+   automatically on first use.
+3. Seed the cloud bank once from this repo (the local `.env` still points at
+   the local server, so override both variables for this command):
+
+```bash
+HINDSIGHT_API_URL=https://api.hindsight.vectorize.io \
+HINDSIGHT_API_KEY=<YOUR_CLOUD_KEY> \
+python -m scripts.push_memories --skip-existing
+```
+
+4. Point the deployed app at the same bank:
+
+```bash
+vercel env rm HINDSIGHT_API_URL production
+printf '%s' 'https://api.hindsight.vectorize.io' | vercel env add HINDSIGHT_API_URL production
+printf '%s' '<YOUR_CLOUD_KEY>' | vercel env add HINDSIGHT_API_KEY production
+vercel --prod
+```
+
+Then reload `/api/health`: `"backend":"hindsight"` and the header badge turns
+green. Until then the app stays fully functional on the BM25 fallback.
 
 ---
 

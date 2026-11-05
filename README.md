@@ -12,6 +12,9 @@ Déjà Vu is an on-call SRE agent with long-term incident memory. It recalls the
 
 ## The 60-second demo
 
+Live: **https://dejavu-tau.vercel.app**  
+Judge tour (auto-runs the story): **https://dejavu-tau.vercel.app/?tour=1**
+
 The same alert, answered twice.
 
 | | Memory **OFF** | Memory **ON** |

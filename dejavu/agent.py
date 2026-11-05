@@ -341,6 +341,13 @@ def analyze(alert_id: str, mode: str = "on") -> dict:
     query = build_query(alert)
     t1 = time.perf_counter()
     mem = memory.recall(query, k=10, service=alert["service"])
+    seen = {h["incident_id"] for h in mem["hits"]}
+    for h in memory.live_hits(alert["service"]):
+        if h["incident_id"] in seen:
+            continue
+        sig, _ = _signal_similarity(alert.get("signals") or {}, h.get("signals") or {})
+        h["score"] = round(0.97 if sig >= 0.8 else 0.55, 3)
+        mem["hits"].append(h)
     mem_ms = (time.perf_counter() - t1) * 1000
     trace.append({"step": "recall", "label": f"recall({memory.BANK}) -> {len(mem['hits'])} memories", "ms": round(mem_ms, 1)})
 

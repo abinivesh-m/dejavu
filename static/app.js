@@ -95,6 +95,10 @@ async function boot() {
   startMotion();
   const hash = location.hash.replace("#", "");
   if (["live", "memory", "learning", "incidents"].includes(hash)) switchTab(hash);
+  // Judges should not have to hunt for the demo: /?tour=1 runs the 60-second story.
+  if (new URLSearchParams(location.search).get("tour") === "1") {
+    setTimeout(() => runStory(), 900);
+  }
   setInterval(loadBus, 4000);
   setInterval(loadHealth, 25000);
 }
@@ -801,6 +805,29 @@ async function animateRecall(container, steps, gap) {
 
 /* ------------------------------------------------------------------ story */
 
+function storyAct(n, label, line) {
+  let el = document.getElementById("storyBar");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "storyBar";
+    el.className = "story-bar";
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<span class="sb-act">act ${n}/5</span>
+    <div class="sb-copy"><b>${esc(label)}</b><p>${esc(line)}</p></div>
+    <span class="sb-progress" style="--p:${n / 5}"></span>`;
+  el.classList.add("show");
+  document.body.classList.add("story-on");
+}
+
+function storyClear(delay = 0) {
+  const el = document.getElementById("storyBar");
+  document.body.classList.remove("story-on");
+  if (!el) return;
+  if (!delay) { el.classList.remove("show"); return; }
+  setTimeout(() => el.classList.remove("show"), delay);
+}
+
 async function runStory() {
   if (state.story || state.busy) return;
   state.story = true;
@@ -812,24 +839,29 @@ async function runStory() {
   }
 
   try {
+    storyAct(1, "02:14 — your phone lights up", "SEV-1 on checkout-api: p99 4.2s, 5xx climbing, deployed 14 minutes ago. You have never seen this exact alert.");
     toast("02:14 — SEV-1 on checkout-api. The page fires.");
     const a = await fireAlert("demo");
     if (!a || state.storyAbort) return;
     await sleep(1200);
     if (state.storyAbort) return;
 
+    storyAct(2, "Memory off — a generic model", "It sees the alert, not your history. Restart the affected pods — no owner, no fix time, nothing to audit.");
     toast("Memory OFF: a generic model answers.");
     await runAnalysis("off");
     await sleep(2200);
     if (state.storyAbort) return;
 
-    toast("Memory ON: same alert, now with 34 retained incidents.");
+    const bank = state.overview?.counts?.memories ?? 34;
+    storyAct(3, `Memory on — ${bank} retained incidents`, "Same alert. Hindsight recalls the missing composite index, three receipts, and the engineer who fixed it in 6 minutes.");
+    toast(`Memory ON: same alert, now with ${bank} retained incidents.`);
     await runAnalysis("on");
     await sleep(2600);
     if (state.storyAbort) return;
 
     const h = state.on?.hypothesis;
     if (h) {
+      storyAct(4, "Resolve and retain", "You apply the fix and close the page. The lesson is written back to Hindsight with source: live — not a note in a doc nobody reads.");
       toast("Resolving and retaining the lesson…");
       await api("/api/resolve", {
         method: "POST",
@@ -848,6 +880,7 @@ async function runStory() {
       if (state.storyAbort) return;
     }
 
+    storyAct(5, "09:41 — same fingerprint", "Four hours later the same pattern fires. The incident you closed before breakfast is now the first thing the agent recalls.");
     toast("09:41 — the same fingerprint fires again.");
     const b = await fireAlert("repeat");
     if (!b || state.storyAbort) return;
@@ -856,11 +889,11 @@ async function runStory() {
 
     const second = await runAnalysis("on");
     if (second) {
-      toast(
-        `Answered from memory in ${Math.round(second.memory_latency_ms || 0)}ms — it now cites the incident it just learned.`,
-        "good"
-      );
+      const ms = Math.round(second.memory_latency_ms || 0);
+      storyAct(5, "Answered from memory", `Recalled in ${ms}ms, citing the incident it learned minutes ago. The bank is one lesson larger than it was at 02:14.`);
+      toast(`Answered from memory in ${ms}ms — it now cites the incident it just learned.`, "good");
     }
+    storyClear(6000);
   } catch (e) {
     toast(`Story stopped: ${e.message}`, "bad");
   } finally {
@@ -975,6 +1008,7 @@ function bindChrome() {
     reset.style.color = "";
     await api("/api/reset", { method: "POST", body: JSON.stringify({ fresh: false }) });
     state.alert = null; state.off = null; state.on = null;
+    storyClear();
     await Promise.all([loadAlerts(), loadOverview()]);
     renderStage();
     loadBus();
@@ -1049,6 +1083,15 @@ function renderMemory() {
   if (state.memFilter === "stale") rows = rows.filter((m) => m.stale);
   if (state.memFilter === "live") rows = rows.filter((m) => String(m.memory_id || "").includes("LIVE"));
 
+  const grouped = new Map();
+  for (const m of rows) {
+    const key = `${m.service}|${m.title || m.root_cause}|${m.cause_class || ""}`;
+    const hit = grouped.get(key);
+    if (hit) hit.count += 1;
+    else grouped.set(key, { ...m, count: 1 });
+  }
+  rows = Array.from(grouped.values());
+
   const filters = `
     <div class="filters">
       ${["all", "resolved", "recurred", "stale", "live"]
@@ -1076,7 +1119,10 @@ function renderMemory() {
                 <span class="rid">${esc(m.incident_id)}</span>
                 ${m.severity ? `<span class="sev ${esc(m.severity)}">${esc(m.severity)}</span>` : ""}
                 <span class="mc-service">${esc(m.service)}</span>
-                ${live ? `<span class="chip good" style="margin-left:auto">learned live</span>` : ""}
+                <span class="mc-badges">
+                  ${live ? `<span class="chip good">learned live</span>` : ""}
+                  ${m.count > 1 ? `<span class="chip repeat">×${m.count} same pattern</span>` : ""}
+                </span>
                 ${m.stale ? `<span class="chip warn" style="margin-left:auto">stale</span>` : ""}
               </div>
               ${m.title ? `<div class="mc-title">${esc(m.title)}</div>` : ""}
@@ -1139,7 +1185,7 @@ function renderLearning() {
   const d = state.learning;
   if (!d) return;
 
-  $("#replayBadge").textContent = `${d.graded} graded · no future memories`;
+  $("#replayBadge").textContent = `${d.graded} graded · ${pct(d.early)} → ${pct(d.late)}`;
   $("#learnStats").innerHTML = `
     <div class="stat">
       <div class="s-label">Top-1 accuracy</div>
@@ -1163,6 +1209,47 @@ function renderLearning() {
     </div>`;
 
   $("#chart").innerHTML = chartSVG(d.points || []);
+
+  const pts = d.points || [];
+  if (pts.length >= 3) {
+    const picks = [pts[0], pts[Math.floor(pts.length / 2)], pts[pts.length - 1]];
+    const copy = [
+      ["cold", "No precedent", "The first alert is a cold guess. There is nothing in the bank to recall."],
+      ["warm", "One similar night", "The pattern has appeared before. The agent starts naming the right failure class."],
+      ["hot", "It knows this team", "Same fingerprint, remembered fix, named engineer — answered from history, not vibes."],
+    ];
+    $("#maturity").innerHTML = `
+      <div class="maturity-head">
+        <h3>Same agent, three moments</h3>
+        <p>Every card is a real graded point from the replay — no future memories, no LLM. This is the progression the demo is about: generic → personal → institutional knowledge.</p>
+      </div>
+      <div class="maturity-grid">
+        ${picks
+          .map((p, i) => {
+            const [tone, label, note] = copy[i];
+            const mem = Math.max(0, p.n - 1);
+            return `<article class="maturity-card ${tone}">
+              <div class="mat-top">
+                <span class="mat-n">Alert #${p.n}</span>
+                <span class="mat-mem">${mem} ${mem === 1 ? "memory" : "memories"}</span>
+              </div>
+              <div class="mat-label">${label}</div>
+              <div class="mat-body">
+                <div><span>Predicted</span><b class="${p.correct ? "ok" : "bad"}">${esc(p.predicted)}</b></div>
+                <div><span>Actually was</span><b>${esc(p.actual)}</b></div>
+              </div>
+              <div class="mat-foot">
+                <span class="mat-verdict ${p.correct ? "ok" : "bad"}">${p.correct ? "matched" : "cold miss"}</span>
+                <span>${pct(p.accuracy)} cumulative · ${esc(p.ts)}</span>
+              </div>
+              <p class="mat-note">${note}</p>
+            </article>`;
+          })
+          .join("")}
+      </div>`;
+  } else {
+    $("#maturity").innerHTML = "";
+  }
 
   const sample = (p) => `<div class="sample">
     <div class="sm-top">
@@ -1306,7 +1393,7 @@ function renderIncidents() {
       </div>
       <div class="searchbox small">
         <svg viewBox="0 0 20 20" width="15" height="15"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.5 13.5L18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input id="incSearch" placeholder="Search incidents, services, engineers…" value="${esc(state.incQuery)}" />
+        <input id="incSearch" placeholder="Search id, service, engineer…" value="${esc(state.incQuery)}" />
       </div>
     </div>
     <div style="padding: 0 14px">

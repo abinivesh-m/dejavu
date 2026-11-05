@@ -102,6 +102,7 @@ def _meta(inc: dict) -> dict[str, str]:
         "engineer": str(inc.get("engineer", "")),
         "severity": str(inc.get("severity", "")),
         "ts": str(inc.get("ts", "")),
+        "signals": json.dumps(inc.get("signals") or {}),
     }
 
 
@@ -174,6 +175,15 @@ def _score_of(result) -> float:
         v = getattr(result, attr, None)
         if isinstance(v, (int, float)):
             return float(v)
+    # Hindsight Cloud nests relevance under scores. ``final`` is the fused
+    # keyword+semantic rank (raw semantic alone reorders clear winners).
+    scores = getattr(result, "scores", None)
+    if scores is not None:
+        d = scores.model_dump() if hasattr(scores, "model_dump") else (scores if isinstance(scores, dict) else {})
+        for k in ("final", "semantic", "reranker"):
+            v = d.get(k)
+            if isinstance(v, (int, float)) and v:
+                return float(v)
     d = getattr(result, "model_dump", lambda: {})()
     for k in ("score", "similarity", "relevance", "weight"):
         if isinstance(d.get(k), (int, float)):
@@ -183,20 +193,24 @@ def _score_of(result) -> float:
 
 def _recall_hindsight(query: str, k: int) -> tuple[list[dict], str]:
     resp = client().recall(
-        bank_id=BANK, query=query, max_tokens=6000, budget="mid",
+        bank_id=BANK, query=query, max_tokens=1500, budget="mid",
         include_source_facts=False, trace=False,
     )
     results = getattr(resp, "results", []) or []
     agg: dict[str, float] = {}
+    meta: dict[str, dict] = {}
     for r in results:
         text = " ".join(_walk_strings(r))
         m = re.search(r"INC-[0-9A-Z\-]+", text)
         inc_id = m.group(0) if m else str(getattr(r, "document_id", "") or "")
         if not inc_id:
             continue
-        s = _score_of(r) or 1.0
+        s = _score_of(r) or 0.5
         agg[inc_id] = max(agg.get(inc_id, 0.0), s)
-    hits = _hydrate(agg)
+        md = getattr(r, "metadata", None) or {}
+        if md and inc_id not in meta:
+            meta[inc_id] = md
+    hits = _hydrate(agg, normalize=False, extra=meta)
     detail = f"hindsight returned {len(results)} raw result(s) -> {len(hits)} incident(s)"
     return hits[:k], detail
 
@@ -294,19 +308,51 @@ def _match_text(row: dict, inc: dict | None) -> str:
     return " ".join(parts)
 
 
-def _hydrate(scores: dict[str, float]) -> list[dict]:
+def _row_from_meta(inc_id: str, md: dict | None) -> dict | None:
+    """Rebuild a hit from Hindsight metadata when the SQLite mirror lacks it.
+
+    Serverless instances each get a fresh /tmp database, so a memory learned
+    live on another instance exists only in Hindsight. Dropping those hits
+    would make the deployment look amnesic.
+    """
+    if not md:
+        return None
+    outcome = md.get("outcome") or "resolved"
+    return {
+        "id": f"MEM-{inc_id}",
+        "incident_id": inc_id,
+        "text": "",
+        "service": md.get("service", ""),
+        "root_cause": md.get("root_cause", ""),
+        "cause_class": md.get("cause_class") or md.get("root_cause", ""),
+        "fix": md.get("fix", ""),
+        "outcome": outcome,
+        "fix_minutes": float(md.get("fix_minutes") or 0),
+        "engineer": md.get("engineer", ""),
+        "created_at": md.get("ts", ""),
+        "success_count": 1 if outcome == "resolved" else 0,
+        "fail_count": 0 if outcome == "resolved" else 1,
+        "stale": False,
+        "signals": db.json_load(md.get("signals") or "{}"),
+    }
+
+
+def _hydrate(scores: dict[str, float], normalize: bool = True,
+             extra: dict[str, dict] | None = None) -> list[dict]:
     if not scores:
         return []
     with db.connect() as con:
         rows = con.execute("SELECT * FROM memories").fetchall()
     by_inc = {r["incident_id"]: dict(r) for r in rows}
+    extra = extra or {}
     sigs = _signals_map()
     top = max(scores.values()) or 1.0
     out = []
     for inc_id, s in scores.items():
-        row = by_inc.get(inc_id)
+        row = by_inc.get(inc_id) or _row_from_meta(inc_id, extra.get(inc_id))
         if row:
-            out.append(_row_hit(row, s / top, sigs.get(inc_id)))
+            signals = sigs.get(inc_id) or row.get("signals") or {}
+            out.append(_row_hit(row, s / top if normalize else s, signals))
     out.sort(key=lambda x: -x["score"])
     return out
 
@@ -315,19 +361,25 @@ def recall(query: str, k: int = 8, service: str | None = None) -> dict:
     t0 = time.perf_counter()
     used = backend()
     detail = ""
+    failure = ""
     hits: list[dict] = []
     if used == "hindsight":
         try:
             hits, detail = _recall_hindsight(query, k)
         except Exception as exc:
             used = "local"
-            detail = f"hindsight recall failed, fell back to bm25: {exc}"[:300]
+            failure = f"hindsight recall failed: {exc}"[:300]
     if used == "local":
         with db.connect() as con:
             rows = [dict(r) for r in con.execute("SELECT * FROM memories").fetchall()]
         hits, detail = _bm25(query, rows, k)
+        if failure:
+            detail = f"{failure} -> {detail}"
 
-    if service:
+    # BM25 is service-blind, so nudge same-service rows. Hindsight's fused
+    # score already accounts for the service named in the query; boosting it
+    # would clamp every near-1.0 hit into a tie.
+    if service and used == "local":
         for h in hits:
             if h["service"] == service:
                 h["score"] = round(min(1.0, h["score"] + 0.08), 3)
@@ -393,6 +445,52 @@ def _enrich(hits: list[dict]) -> list[dict]:
                 h["signals"] = {}
         out.append(h)
     return out
+
+
+def forget(incident_ids: list[str]) -> int:
+    """Delete live documents from the cloud bank (demo reset). Seeded ones stay."""
+    if backend() != "hindsight" or not incident_ids:
+        return 0
+    headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
+    removed = 0
+    for iid in incident_ids:
+        try:
+            r = httpx.delete(
+                f"{BASE_URL}/v1/default/banks/{BANK}/documents/{iid}",
+                headers=headers, timeout=20.0,
+            )
+            removed += r.status_code < 300
+        except Exception:
+            continue
+    return removed
+
+
+def forget_live() -> int:
+    """Drop every live-learned document from the cloud bank (serverless reset)."""
+    if backend() != "hindsight":
+        return 0
+    headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
+    try:
+        r = httpx.get(f"{BASE_URL}/v1/default/banks/{BANK}/documents",
+                      params={"limit": 500}, headers=headers, timeout=20.0)
+        payload = r.json()
+    except Exception:
+        return 0
+    docs = payload.get("documents") or payload.get("items") or []
+    ids = [d.get("id") or d.get("document_id") for d in docs]
+    return forget([i for i in ids if i and str(i).startswith("INC-LIVE")])
+
+
+def live_hits(service: str | None = None, limit: int = 10) -> list[dict]:
+    """Recently learned incidents. Hindsight indexes async; this is the
+    immediately-consistent read path for a memory the team just wrote."""
+    with db.connect() as con:
+        rows = [dict(r) for r in con.execute(
+            "SELECT * FROM memories WHERE source='live' ORDER BY created_at DESC LIMIT ?", (limit,)
+        ).fetchall()]
+    sigs = _signals_map()
+    return [_row_hit(r, 0.5, sigs.get(r["incident_id"]))
+            for r in rows if not service or r["service"] == service]
 
 
 def stale_memories() -> list[dict]:

@@ -182,6 +182,11 @@ def reset(body: Reset = Reset()) -> dict:
             con.execute("DELETE FROM memories")
             con.execute("DELETE FROM incidents")
     if body.fresh:
+        try:
+            memory.forget_live()
+        except Exception:
+            pass
+    if body.fresh:
         with db.connect() as con:
             seed.seed_memories(con)
     return {"ok": True, "counts": db.counts()}
