@@ -91,6 +91,10 @@ async function boot() {
     renderStage();
   }
   loadBus();
+  loadTicker();
+  startMotion();
+  const hash = location.hash.replace("#", "");
+  if (["live", "memory", "learning", "incidents"].includes(hash)) switchTab(hash);
   setInterval(loadBus, 4000);
   setInterval(loadHealth, 25000);
 }
@@ -214,15 +218,43 @@ async function fireAlert(scenario = "demo") {
 function renderStage() {
   const stage = $("#stage");
   if (!state.alert) {
-    stage.innerHTML = `<div class="empty">
-      <div class="empty-ring"></div>
-      <h2>No incident selected</h2>
-      <p>Fire a demo alert to watch the agent recall what happened last time — and what it got wrong.</p>
-      <div class="empty-actions">
-        <button class="btn primary lg" id="btnDemo2">▶ Run the full story</button>
-        <button class="btn ghost lg" id="btnFire2">Fire an alert</button>
+    const bank = state.overview?.counts?.memories ?? 34;
+    stage.innerHTML = `<div class="hero fade-in">
+      <div class="hero-copy">
+        <span class="hero-eyebrow"><i></i> On-call incident memory · Hindsight</span>
+        <h2 class="hero-title">The incident you're having <em>already happened.</em></h2>
+        <p class="hero-sub">At 3 a.m. the answer is rarely in the model's weights. It's in your own history: the same failure six weeks ago, the fix that held, the engineer who shipped it — and the look-alike that fooled everyone. <b>Déjà Vu recalls it, proves every claim with a receipt, and gets sharper every time you resolve.</b></p>
+        <div class="hero-cta">
+          <button class="btn primary lg" id="btnDemo2"><span class="play">▶</span> Run the 60-second story</button>
+          <button class="btn ghost lg" id="btnFire2">Fire a single alert</button>
+        </div>
+        <div class="hero-flow">
+          <span><b>1</b> alert fingerprint</span><i>→</i>
+          <span><b>2</b> Hindsight recall</span><i>→</i>
+          <span><b>3</b> receipts + critic</span><i>→</i>
+          <span><b>4</b> resolve &amp; retain</span>
+        </div>
+        <div class="hero-proof">
+          <div class="proof"><b data-count="${bank}">0</b><span>incidents retained</span></div>
+          <div class="proof"><b data-count="83" data-suffix="%">0%</b><span>top-1 on the latest six</span></div>
+          <div class="proof"><b data-count="41" data-prefix="≈" data-suffix=" min">0</b><span>saved per incident</span></div>
+          <div class="proof"><b data-count="97" data-suffix="%">0%</b><span>confidence with memory</span></div>
+        </div>
+      </div>
+      <div class="hero-orb" aria-hidden="true">
+        <span class="orb-halo"></span>
+        <span class="orb-ring r1"></span>
+        <span class="orb-ring r2"></span>
+        <span class="orb-ring r3"></span>
+        <span class="orb-scan"></span>
+        <span class="orb-core"></span>
+        <span class="orb-node n1">INC-0018</span>
+        <span class="orb-node n2">pool exhaustion</span>
+        <span class="orb-node n3">fix held · 6 min</span>
+        <span class="orb-node n4">same fingerprint</span>
       </div>
     </div>`;
+    animateCounters(stage);
     const b = $("#btnDemo2");
     if (b) b.addEventListener("click", () => runStory());
     const f = $("#btnFire2");
@@ -417,11 +449,14 @@ function confidenceRing(conf) {
   const dash = c * Math.max(0, Math.min(1, conf));
   return `<div class="ring" title="Confidence ${pct(conf)}">
     <svg viewBox="0 0 64 64" width="64" height="64">
-      <circle cx="32" cy="32" r="${r}" fill="none" stroke="#23262e" stroke-width="4"/>
+      <circle cx="32" cy="32" r="${r}" fill="none" stroke="#eae3d9" stroke-width="4"/>
       <circle cx="32" cy="32" r="${r}" fill="none" stroke="url(#rg)" stroke-width="4"
-        stroke-linecap="round" stroke-dasharray="${dash} ${c}" transform="rotate(-90 32 32)"/>
+        stroke-linecap="round" stroke-dasharray="${dash} ${c}" transform="rotate(-90 32 32)">
+        <animate attributeName="stroke-dasharray" from="0 ${c}" to="${dash} ${c}"
+          dur="0.9s" fill="freeze" calcMode="spline" keySplines="0.2 0.8 0.2 1"/>
+      </circle>
       <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ff5c1a"/>
+        <stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ea531f"/>
       </linearGradient></defs>
     </svg>
     <div class="ring-num">${Math.round(conf * 100)}<span>%</span></div>
@@ -978,6 +1013,7 @@ function switchTab(name) {
   state.tab = name;
   $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   $$(".panel").forEach((p) => p.classList.toggle("active", p.id === `tab-${name}`));
+  try { history.replaceState(null, "", `#${name}`); } catch {}
   if (name === "memory" && !state.memories.length) loadMemory();
   if (name === "learning" && !state.learning) loadLearning();
   if (name === "incidents" && !state.incidents.length) loadIncidents();
@@ -1033,9 +1069,9 @@ function renderMemory() {
     filters +
     (rows.length
       ? rows
-          .map((m) => {
+          .map((m, idx) => {
             const live = String(m.memory_id || "").includes("LIVE") || String(m.incident_id || "").includes("LIVE");
-            return `<article class="mem-card ${m.stale ? "is-stale" : ""}">
+            return `<article class="mem-card ${m.stale ? "is-stale" : ""}" style="--i:${idx}">
               <div class="mc-top">
                 <span class="rid">${esc(m.incident_id)}</span>
                 ${m.severity ? `<span class="sev ${esc(m.severity)}">${esc(m.severity)}</span>` : ""}
@@ -1154,16 +1190,16 @@ function chartSVG(points) {
 
   const grid = [0, 0.25, 0.5, 0.75, 1]
     .map(
-      (v) => `<line x1="${L}" y1="${y(v)}" x2="${W - R}" y2="${y(v)}" stroke="#1e222a" stroke-width="1"/>
-              <text x="${L - 9}" y="${y(v) + 3.5}" text-anchor="end" fill="#5c626e" font-size="10" font-family="var(--mono)">${v * 100}%</text>`
+      (v) => `<line x1="${L}" y1="${y(v)}" x2="${W - R}" y2="${y(v)}" stroke="#e8e1d7" stroke-width="1"/>
+              <text x="${L - 9}" y="${y(v) + 3.5}" text-anchor="end" fill="#8a8076" font-size="10" font-family="monospace">${v * 100}%</text>`
     )
     .join("");
 
   const dots = points
     .map((p, i) => {
-      const c = p.correct ? "#34d399" : "#ff5468";
+      const c = p.correct ? "#12824c" : "#c0292f";
       return `<g class="pt">
-        <circle cx="${x(i).toFixed(1)}" cy="${y(p.accuracy).toFixed(1)}" r="4" fill="${c}" stroke="#0e1013" stroke-width="1.5">
+        <circle cx="${x(i).toFixed(1)}" cy="${y(p.accuracy).toFixed(1)}" r="4" fill="${c}" stroke="#fffdfa" stroke-width="1.5">
           <title>${esc(p.incident_id)} · ${esc(p.ts)} · ${p.correct ? "correct" : "missed"} · cumulative ${pct(p.accuracy)}
 Predicted: ${esc(p.predicted)}
 Actual: ${esc(p.actual)}</title>
@@ -1175,7 +1211,7 @@ Actual: ${esc(p.actual)}</title>
   const labels = points
     .map((p, i) =>
       i % Math.max(1, Math.ceil(n / 8)) === 0 || i === n - 1
-        ? `<text x="${x(i).toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#5c626e" font-size="9.5" font-family="var(--mono)">${esc(p.ts.slice(5))}</text>`
+        ? `<text x="${x(i).toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#8a8076" font-size="9.5" font-family="monospace">${esc(p.ts.slice(5))}</text>`
         : ""
     )
     .join("");
@@ -1192,7 +1228,7 @@ Actual: ${esc(p.actual)}</title>
     </defs>
     ${grid}
     <path d="${area}" fill="url(#areaGrad)"/>
-    <path d="${path}" fill="none" stroke="url(#lineGrad)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <path class="chart-line" pathLength="1" d="${path}" fill="none" stroke="url(#lineGrad)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
     ${dots}
     ${labels}
   </svg>`;
@@ -1210,6 +1246,41 @@ async function loadIncidents() {
   }
 }
 
+function fmtShort(ts) {
+  try {
+    return new Date(ts).toLocaleDateString([], { day: "numeric", month: "short" });
+  } catch { return day(ts); }
+}
+
+function incidentCard(i, idx) {
+  const disc = i.discriminator
+    ? `<div class="inc-row disc"><span>Look-alike check</span><p>${esc(i.discriminator)}</p></div>`
+    : "";
+  return `<article class="inc-card" data-inc="${esc(i.id)}" style="--i:${idx}" tabindex="0" role="button" aria-expanded="false">
+    <div class="inc-top">
+      <span class="inc-id">${esc(i.id)}</span>
+      <span class="sev ${esc(i.severity)}">${esc(i.severity)}</span>
+      <span class="inc-svc">${esc(i.service)}</span>
+      <span class="inc-date">${esc(fmtShort(i.ts))}</span>
+    </div>
+    <h3 class="inc-title">${esc(i.title)}</h3>
+    <p class="inc-symptom">${esc(i.symptom)}</p>
+    <div class="inc-tags">
+      <span class="inc-class">${esc(i.cause_class || "unclassified")}</span>
+      <span class="pill-out ${esc(i.outcome)}">${esc(i.outcome)}</span>
+      <span class="inc-time">${num(i.fix_minutes, 0)} min</span>
+      <span class="inc-eng">${esc(i.engineer)}</span>
+      <span class="inc-hint">open details</span>
+    </div>
+    <div class="inc-detail" hidden>
+      <div class="inc-row"><span>What broke</span><p>${esc(i.root_cause)}</p></div>
+      <div class="inc-row hi"><span>Fix that worked</span><p>${esc(i.fix)}</p></div>
+      ${disc}
+      <div class="inc-row"><span>Resolved by</span><p>${esc(i.engineer)} · ${num(i.fix_minutes, 0)} minutes · ${esc(i.outcome)}</p></div>
+    </div>
+  </article>`;
+}
+
 function renderIncidents() {
   const card = $("#tab-incidents .table-card");
   if (!card) return;
@@ -1218,44 +1289,60 @@ function renderIncidents() {
   const rows = state.incidents.filter(
     (i) =>
       (state.incService === "all" || i.service === state.incService) &&
-      (!q || `${i.id} ${i.title} ${i.root_cause} ${i.cause_class} ${i.service}`.toLowerCase().includes(q))
+      (!q || `${i.id} ${i.title} ${i.root_cause} ${i.cause_class} ${i.service} ${i.engineer}`.toLowerCase().includes(q))
   );
+  const held = rows.filter((i) => i.outcome === "resolved").length;
+  const avg = rows.length ? Math.round(rows.reduce((s, i) => s + (Number(i.fix_minutes) || 0), 0) / rows.length) : 0;
 
   card.innerHTML = `
-    <div class="table-tools">
+    <div class="table-tools inc-toolbar">
       <div class="filters">
         ${services
           .map(
             (s) =>
-              `<button class="filter ${state.incService === s ? "active" : ""}" data-incservice="${esc(s)}">${esc(s)}</button>`
+              `<button class="filter ${state.incService === s ? "active" : ""}" data-incservice="${esc(s)}">${esc(s === "all" ? "all services" : s)}</button>`
           )
           .join("")}
       </div>
       <div class="searchbox small">
         <svg viewBox="0 0 20 20" width="15" height="15"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.5 13.5L18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input id="incSearch" placeholder="Filter incidents…" value="${esc(state.incQuery)}" />
+        <input id="incSearch" placeholder="Search incidents, services, engineers…" value="${esc(state.incQuery)}" />
       </div>
     </div>
-    <div class="table-scroll">
-      <table class="table" id="incTable">
-        <thead><tr><th>Incident</th><th>Date</th><th>Service</th><th>What happened</th><th>Cause class</th><th>Outcome</th><th class="r">Time</th></tr></thead>
-        <tbody>
-          ${rows
-            .map(
-              (i) => `<tr>
-                <td class="tid">${esc(i.id)}</td>
-                <td class="tsvc">${esc(day(i.ts))}</td>
-                <td class="tsvc">${esc(i.service)}</td>
-                <td class="ttitle">${esc(i.title)}</td>
-                <td class="tclass">${esc(i.cause_class || i.root_cause)}</td>
-                <td><span class="pill-out ${esc(i.outcome)}">${esc(i.outcome)}</span></td>
-                <td class="r">${num(i.fix_minutes, 0)} min</td>
-              </tr>`
-            )
-            .join("") || `<tr><td colspan="7"><div class="empty-mini">No incidents match.</div></td></tr>`}
-        </tbody>
-      </table>
+    <div style="padding: 0 14px">
+      <div class="inc-summary">
+        <span><b>${rows.length}</b> incidents shown</span>
+        <span><b>${services.length - 1}</b> services</span>
+        <span><b>${held}</b> fixes held</span>
+        <span><b>${avg} min</b> average fix</span>
+        <span><b>90 days</b> of history</span>
+      </div>
+      <p class="inc-note"><b>How to read this:</b> every card is one past incident in plain language. Click it to see what actually broke, the fix that held, who shipped it, and the signal that keeps it from being confused with a look-alike.</p>
+    </div>
+    <div class="inc-grid" style="padding: 0 14px 16px">
+      ${rows.map((i, idx) => incidentCard(i, idx)).join("") || `<div class="empty-mini">No incidents match. Try another service or search term.</div>`}
     </div>`;
+
+  const toggle = (el) => {
+    const det = el.querySelector(".inc-detail");
+    if (!det) return;
+    const open = el.classList.toggle("open");
+    el.setAttribute("aria-expanded", String(open));
+    det.hidden = !open;
+    if (open) {
+      det.animate(
+        [{ height: 0, opacity: 0 }, { height: `${det.scrollHeight}px`, opacity: 1 }],
+        { duration: 260, easing: "cubic-bezier(.2,.8,.2,1)" }
+      );
+    }
+  };
+
+  $$("[data-inc]", card).forEach((el) => {
+    el.addEventListener("click", () => toggle(el));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(el); }
+    });
+  });
 
   $$("[data-incservice]", card).forEach((b) =>
     b.addEventListener("click", () => {
@@ -1302,6 +1389,192 @@ function renderBus(backend) {
       </div>`;
     })
     .join("") || `<div class="bus-line"><span></span><span class="b-op">idle</span><span class="b-q">no memory operations yet</span><span></span></div>`;
+}
+
+/* ------------------------------------------------------- ambient + motion */
+
+function animateCounters(root = document) {
+  $$("[data-count]", root).forEach((el) => {
+    if (el.dataset.counted === "1") return;
+    el.dataset.counted = "1";
+    const target = Number(el.dataset.count);
+    if (!Number.isFinite(target)) return;
+    const prefix = el.dataset.prefix || "";
+    const suffix = el.dataset.suffix || "";
+    const t0 = performance.now();
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / 1100);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = `${prefix}${Math.round(target * e)}${suffix}`;
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+async function loadTicker() {
+  try {
+    const d = await api("/api/memory?q=");
+    const mems = (d.memories || []).slice(0, 16);
+    const inner = $("#tickerInner");
+    if (!inner || !mems.length) return;
+    const items = mems
+      .map(
+        (m) => `<span class="ticker-item"><i class="t-dot"></i><b>${esc(m.incident_id)}</b> ${esc(
+          m.root_cause
+        )} · ${esc(m.service)} · ${esc(m.outcome)} in ${num(m.fix_minutes, 0)}m</span>`
+      )
+      .join("");
+    inner.innerHTML = items + items;
+  } catch { /* the ticker is decorative */ }
+}
+
+const TILT_SEL =
+  ".mem-card, .stat, .learned-card, .verdict-hero, .alert-summary, .band-room, .mode-col, .inc-card";
+let tiltEl = null;
+
+function prepTilt(el) {
+  if (getComputedStyle(el).position === "static") el.style.position = "relative";
+  if (!el.querySelector(":scope > .glare")) {
+    const g = document.createElement("i");
+    g.className = "glare";
+    el.appendChild(g);
+  }
+}
+
+function resetTilt(el) {
+  if (!el) return;
+  el.classList.remove("tilting");
+  el.style.transform = "";
+  el.style.removeProperty("--mx");
+  el.style.removeProperty("--my");
+}
+
+function startTilt() {
+  let frame = 0;
+  let pending = null;
+
+  const apply = () => {
+    frame = 0;
+    if (!pending) return;
+    const { el, x, y } = pending;
+    pending = null;
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const px = Math.min(1, Math.max(0, (x - r.left) / r.width));
+    const py = Math.min(1, Math.max(0, (y - r.top) / r.height));
+    el.classList.add("tilting");
+    el.style.setProperty("--mx", `${(px * 100).toFixed(1)}%`);
+    el.style.setProperty("--my", `${(py * 100).toFixed(1)}%`);
+    el.style.transform = `perspective(1000px) rotateX(${((0.5 - py) * 5).toFixed(2)}deg) rotateY(${(
+      (px - 0.5) *
+      7
+    ).toFixed(2)}deg) translateY(-2px)`;
+  };
+
+  document.addEventListener(
+    "pointermove",
+    (e) => {
+      if (e.pointerType !== "mouse") return;
+      const el = e.target.closest ? e.target.closest(TILT_SEL) : null;
+      if (el !== tiltEl) {
+        resetTilt(tiltEl);
+        tiltEl = el;
+        if (el) prepTilt(el);
+      }
+      if (!el) return;
+      pending = { el, x: e.clientX, y: e.clientY };
+      if (!frame) frame = requestAnimationFrame(apply);
+    },
+    { passive: true }
+  );
+
+  const clear = () => { resetTilt(tiltEl); tiltEl = null; };
+  document.addEventListener("pointerout", (e) => { if (!e.relatedTarget) clear(); });
+  window.addEventListener("blur", clear);
+}
+
+function startAmbient() {
+  const canvas = $("#ambientCanvas");
+  if (!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext("2d");
+  let w = 0;
+  let h = 0;
+  let pts = [];
+  const mouse = { x: 0.5, y: 0.5 };
+
+  const size = () => {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.min(56, Math.max(18, Math.round((w * h) / 30000)));
+    pts = Array.from({ length: n }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.22,
+      vy: (Math.random() - 0.5) * 0.22,
+      r: Math.random() * 1.5 + 0.5,
+    }));
+  };
+  size();
+  window.addEventListener("resize", size, { passive: true });
+  document.addEventListener(
+    "pointermove",
+    (e) => { mouse.x = e.clientX / w; mouse.y = e.clientY / h; },
+    { passive: true }
+  );
+
+  let last = 0;
+  const frame = (t) => {
+    requestAnimationFrame(frame);
+    if (t - last < 33) return;
+    last = t;
+    ctx.clearRect(0, 0, w, h);
+    const pullX = (mouse.x - 0.5) * 0.16;
+    const pullY = (mouse.y - 0.5) * 0.16;
+    for (const p of pts) {
+      p.x += p.vx + pullX;
+      p.y += p.vy + pullY;
+      if (p.x < -10) p.x = w + 10;
+      else if (p.x > w + 10) p.x = -10;
+      if (p.y < -10) p.y = h + 10;
+      else if (p.y > h + 10) p.y = -10;
+    }
+    const R = 118;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      for (let j = i + 1; j < pts.length; j++) {
+        const b = pts[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < R * R) {
+          ctx.strokeStyle = `rgba(234, 83, 31, ${(1 - d2 / (R * R)) * 0.12})`;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+    for (const p of pts) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(234, 83, 31, 0.32)";
+      ctx.fill();
+    }
+  };
+  requestAnimationFrame(frame);
+}
+
+function startMotion() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  startAmbient();
+  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) startTilt();
 }
 
 /* ------------------------------------------------------------------- init */

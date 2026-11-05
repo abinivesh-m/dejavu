@@ -5,10 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Déjà Vu — the on-call agent that has seen this before</title>
 <meta name="description" content="Incident memory with receipts: recall what fixed it, what failed, and why this time is different." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/static/style.css" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='none' stroke='%23ff5c1a' stroke-width='10'/><circle cx='50' cy='50' r='12' fill='%23ff5c1a'/></svg>" />
 </head>
 <body>
+<div class="ambient" aria-hidden="true">
+  <canvas id="ambientCanvas"></canvas>
+  <span class="ambient-blob b1"></span>
+  <span class="ambient-blob b2"></span>
+  <span class="ambient-blob b3"></span>
+  <span class="ambient-grid"></span>
+  <span class="ambient-scan"></span>
+</div>
 <div class="app">
 
   <header class="topbar">
@@ -46,6 +57,11 @@
     <button class="tab" data-tab="learning">Learning</button>
     <button class="tab" data-tab="incidents">Incidents</button>
   </nav>
+
+  <div class="ticker" id="ticker" aria-hidden="true">
+    <span class="ticker-label"><i class="pulse"></i> retained</span>
+    <div class="ticker-track"><div class="ticker-inner" id="tickerInner"></div></div>
+  </div>
 
   <main>
     <!-- ---------------------------------------------------------------- LIVE -->
@@ -108,7 +124,7 @@
       <div class="card chart-card">
         <div class="chart-head">
           <h3>Top-1 accuracy as memory grows</h3>
-          <div class="legend"><span class="lg ok"></span> correct <span class="lg bad"></span> missed</div>
+          <div class="legend"><span class="swatch ok"></span> correct <span class="swatch bad"></span> missed</div>
         </div>
         <div id="chart"></div>
       </div>
