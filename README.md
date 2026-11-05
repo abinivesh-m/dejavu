@@ -256,7 +256,7 @@ static/
   app.js         comparison, recall animation, receipts, replay chart
 api/index.py     Vercel serverless entrypoint
 scripts/
-  verify.py      65 assertions across data, memory, API, UI and docs
+  verify.py      release checks across data, memory, API, UI and docs
   smoke.py       end-to-end: off → on → resolve → repeat → replay
   push_memories.py  sync the corpus into a Hindsight bank
   debug_rank.py  single-incident ranking debugger
@@ -284,11 +284,11 @@ docs/
 ## Verification
 
 ```bash
-python -m scripts.verify   # 65 assertions
+python -m scripts.verify   # release checks
 python -m scripts.smoke    # off → on → resolve → repeat → replay
 ```
 
-`verify` exercises the seeded corpus, the live API, ranking invariants, the decision layer, the UI contract and the documentation links, then restores the bank to its seeded state.
+`verify` asserts against the seeded corpus, the live API, ranking invariants, the decision layer, the UI contract and the documentation links, then restores the bank to its seeded state.
 
 ---
 

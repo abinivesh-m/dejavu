@@ -91,49 +91,50 @@ def main() -> int:
     check("replay late >= 0.75", rep["late"] >= 0.75, str(rep["late"]))
     check("replay early < late", rep["early"] < rep["late"], f"{rep['early']} vs {rep['late']}")
 
-    # ---- content files
+    # ---- writing package (kept out of the public repo; checked when present)
     articles = {
         "abinivesh-m": ROOT / "docs" / "ARTICLE.md",
         "abhinivesh-k": ROOT / "docs" / "articles" / "abhinivesh-k.md",
         "mrittika-s": ROOT / "docs" / "articles" / "mrittika-s.md",
         "harini-e-s": ROOT / "docs" / "articles" / "harini-e-s.md",
     }
-    root_art = ROOT / "article.md"
-    check("article.md exists", root_art.exists())
-    check(
-        "article.md matches docs/ARTICLE.md",
-        root_art.exists()
-        and root_art.read_text(encoding="utf-8") == articles["abinivesh-m"].read_text(encoding="utf-8"),
-    )
-    for name, path in articles.items():
-        check(f"{name} article exists", path.exists())
-        if not path.exists():
-            continue
-        txt = path.read_text(encoding="utf-8")
-        words = len(re.findall(r"\w+", txt))
-        check(f"{name} 800-1500 words", 800 <= words <= 1500, str(words))
-        check(f"{name} mentions Hindsight", "Hindsight" in txt)
-        check(f"{name} hindsight github link", "github.com/vectorize-io/hindsight" in txt)
-        check(f"{name} hindsight docs link", "hindsight.vectorize.io" in txt)
-        check(f"{name} vectorize memory link", "vectorize.io/what-is-agent-memory" in txt)
-        check(f"{name} code snippet", "```" in txt)
-        check(f"{name} no 'hackathon'", "hackathon" not in txt.lower())
-
     soc = ROOT / "docs" / "SOCIAL.md"
-    check("SOCIAL.md exists", soc.exists())
-    if soc.exists():
-        txt = soc.read_text(encoding="utf-8")
-        check("social no 'hackathon'", "hackathon" not in txt.lower())
+    if any(p.exists() for p in articles.values()) or soc.exists():
+        root_art = ROOT / "article.md"
+        check("article.md exists", root_art.exists())
+        check(
+            "article.md matches docs/ARTICLE.md",
+            root_art.exists()
+            and root_art.read_text(encoding="utf-8") == articles["abinivesh-m"].read_text(encoding="utf-8"),
+        )
+        for name, path in articles.items():
+            check(f"{name} article exists", path.exists())
+            if not path.exists():
+                continue
+            txt = path.read_text(encoding="utf-8")
+            words = len(re.findall(r"\w+", txt))
+            check(f"{name} 800-1500 words", 800 <= words <= 1500, str(words))
+            check(f"{name} mentions Hindsight", "Hindsight" in txt)
+            check(f"{name} hindsight github link", "github.com/vectorize-io/hindsight" in txt)
+            check(f"{name} hindsight docs link", "hindsight.vectorize.io" in txt)
+            check(f"{name} vectorize memory link", "vectorize.io/what-is-agent-memory" in txt)
+            check(f"{name} code snippet", "```" in txt)
+            check(f"{name} no 'hackathon'", "hackathon" not in txt.lower())
 
-    # ---- social char counts
-    import re as _re
-    posts = _re.split(r"\n## ", soc.read_text(encoding="utf-8")) if soc.exists() else []
-    for p in posts[1:]:
-        title = p.split("\n", 1)[0]
-        if not title[0].isdigit():
-            continue
-        body = p.split("\n", 1)[1].split("\n---")[0].strip()
-        check(f"social post {title[:2]} < 800 chars", len(body) < 800, str(len(body)))
+        if soc.exists():
+            txt = soc.read_text(encoding="utf-8")
+            check("social no 'hackathon'", "hackathon" not in txt.lower())
+
+            # ---- social char counts
+            posts = re.split(r"\n## ", txt)
+            for p in posts[1:]:
+                title = p.split("\n", 1)[0]
+                if not title[0].isdigit():
+                    continue
+                body = p.split("\n", 1)[1].split("\n---")[0].strip()
+                check(f"social post {title[:2]} < 800 chars", len(body) < 800, str(len(body)))
+    else:
+        print("  SKIP writing package (not part of the public repo)")
 
     # ---- no secrets
     env = ROOT / ".env"
