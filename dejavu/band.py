@@ -230,7 +230,7 @@ def dispatch(analysis: dict, alert_id: str) -> dict:
 
     return {
         "configured": live,
-        "delivered": all(x["ok"] for x in log) if live else False,
+        "delivered": all(x["delivered"] for x in log) if live else False,
         "transport": "band" if live else "local-preview",
         "review": review,
         "messages": db.band_for(alert_id),
