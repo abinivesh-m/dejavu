@@ -124,27 +124,21 @@ client.retain(
 ## Architecture
 
 ```mermaid
-flowchart LR
-    A[Alert fires] --> B[Signal fingerprint]
-    B --> C{Hindsight recall}
-    C -- bank dejavu-oncall --> D[Candidate incidents]
-    C -.unreachable.-> E[BM25 over SQLite mirror]
-    D --> F[Rank]
-    E --> F
-    F --> G[Failure-class grouping<br/>signal similarity + outcome + recency]
-    G --> H[Contradiction guard]
-    G --> I[Memory receipts]
-    G --> J[Decision layer]
-    H --> K[Groq narrative]
-    I --> K
-    J --> K
-    K --> L[On-call answer]
-    L --> M{Resolved?}
-    M -- yes --> N[retain: new incident memory]
-    N --> C
+flowchart TD
+    A[Alert fires] --> B[Hindsight recall<br/>bank: dejavu-oncall]
+    B -. unreachable .-> D[BM25 over SQLite mirror]
+    B --> C[Rank: signal + outcome + recency]
+    D --> C
+    C --> E[Contradiction guard<br/>name the look-alike]
+    E --> F[Receipts + APPLY / VERIFY / STOP]
+    F --> G[Groq narrative]
+    G --> H[On-call answer]
+    H --> I{Resolved?}
+    I -- yes --> J[retain the lesson]
+    J -. next alert .-> B
 ```
 
-Déjà Vu is a thin, auditable pipeline rather than an agent loop: **recall → rank → guard → decide → narrate**. Groq writes the prose; it never chooses the cause, the fix, or the confidence.
+The answer path is a fixed pipeline, not a ReAct loop: **recall → rank → guard → decide → narrate**. Groq writes the prose; it never chooses the cause, the fix, or the confidence.
 
 Deeper detail: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
