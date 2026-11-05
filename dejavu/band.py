@@ -34,6 +34,7 @@ KEY = os.getenv("BAND_API_KEY") or ""
 CHAT = os.getenv("BAND_CHAT_ID") or ""
 CRITIC_KEY = os.getenv("BAND_CRITIC_API_KEY") or ""
 HUMAN_ID = os.getenv("BAND_HUMAN_ID") or ""
+HUMAN_NAME = os.getenv("BAND_HUMAN_NAME") or HUMAN_ID
 AGENT_NAME = os.getenv("BAND_AGENT_NAME", "DejaVu-Recall")
 CRITIC_NAME = os.getenv("BAND_CRITIC_NAME", "DejaVu-Critic")
 TIMEOUT = float(os.getenv("BAND_TIMEOUT", "12"))
@@ -225,7 +226,7 @@ def dispatch(analysis: dict, alert_id: str) -> dict:
             "thought", KEY)
     elif HUMAN_ID:
         add(AGENT_NAME, "recall",
-            f"@{HUMAN_ID} {review['verdict'].upper()}. Approve the fix in this room and I will retain the lesson.",
+            f"@{HUMAN_NAME} — {review['verdict'].upper()}. Approve the fix in this room and I will retain the lesson.",
             "message", KEY, mentions=[HUMAN_ID])
 
     return {

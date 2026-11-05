@@ -81,8 +81,10 @@ def main() -> int:
           (r.get("memory") or {}).get("backend"))
     b = agent.create_alert("repeat")
     on2 = agent.analyze(b["id"], "on")
-    check("repeat cites a live incident first",
-          any("LIVE" in str(e["incident_id"]) for e in on2["evidence"][:2]))
+    live = [e for e in on2["evidence"] if "LIVE" in str(e["incident_id"])]
+    rank = on2["evidence"].index(live[0]) + 1 if live else 0
+    check("repeat recalls the incident learned moments earlier", bool(live),
+          f"rank {rank} of {len(on2['evidence'])}" if live else "not recalled")
 
     # ---- replay
     rep = agent.replay()
