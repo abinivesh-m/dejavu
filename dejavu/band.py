@@ -75,7 +75,7 @@ def post_event(body: str, kind: str = "thought", api_key: str | None = None) -> 
     """Events need no mention and are visible to every human in the room."""
     ok, detail, ms = _post(
         "/events",
-        {"event": {"content": body, "kind": kind}},
+        {"event": {"content": body, "message_type": kind}},
         api_key or KEY or CRITIC_KEY,
     )
     return {"ok": ok, "detail": detail, "latency_ms": round(ms, 1), "kind": kind}

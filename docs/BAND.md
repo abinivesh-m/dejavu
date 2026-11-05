@@ -113,6 +113,13 @@ BAND_HUMAN_ID=<your participant id>   # optional, enables the @mention
    The Band panel's transport badge changes from `local preview` to
    `delivered to Band`, and the messages appear in the room.
 
+Before that, confirm the credentials with the bridge check:
+
+```bash
+python -m scripts.band_check          # lists the rooms the agent can see
+python -m scripts.band_check --post   # posts one test event from each agent
+```
+
 ## Transport
 
 Band Agent API, REST only — no WebSocket needed for this flow, because Déjà Vu
@@ -124,8 +131,16 @@ POST https://app.band.ai/api/v1/agent/chats/{chat_id}/messages
 Header: X-API-Key: <agent api key>
 ```
 
-`events` are informational and need no mention. `messages` are directed and
-require at least one mention. Both are visible to every human in the room.
+`events` are informational and need no mention:
+
+```json
+{"event": {"content": "...", "message_type": "thought"}}
+```
+
+`message_type` is one of `tool_call`, `tool_result`, `thought`, `error`,
+`task`, `attention`. `messages` are directed, need at least one mention, and
+carry `{"message": {"content": "...", "mentions": [{"id": "<participant uuid>"}]}}`.
+Both are visible to every human in the room.
 
 ## Honesty
 
