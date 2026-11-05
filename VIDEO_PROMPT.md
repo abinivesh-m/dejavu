@@ -43,7 +43,7 @@ Visual: click "Recall with memory". Animated recall steps play:
 "encoding the alert signature", "hindsight.recall(bank=dejavu-oncall)",
 "reranking by signal fingerprint + outcome", "synthesising the narrative".
 Then hypothesis appears: "Missing composite index on
-orders(created_at,status)", 87% confidence, confidence ring fills.
+orders(created_at,status)", 97% confidence, confidence ring fills.
 Receipts appear: INC-1006 (6 min, Priya Raman, resolved), INC-1001 (resolved),
 INC-1002 (resolved). Timeline strip shows incidents over time.
 Voiceover: "Now the same alert, with memory. Missing composite index on
